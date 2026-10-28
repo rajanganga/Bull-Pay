@@ -1,0 +1,33 @@
+<!doctype html><html lang="hi"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>BullPay Admin</title>
+<style>
+:root{--g:#f5b301;--bg:#0e0f13;--c:#1b1d24;--t:#f2f2f2}
+*{box-sizing:border-box}body{margin:0 auto;max-width:720px;padding:16px;font-family:system-ui,sans-serif;background:var(--bg);color:var(--t)}
+h1{color:var(--g)}.card{background:var(--c);border-radius:14px;padding:14px;margin:10px 0}
+input,button{width:100%;padding:11px;margin:5px 0;border-radius:10px;border:1px solid #333;background:#111;color:var(--t);font-size:15px}
+button{background:var(--g);color:#000;border:0;font-weight:700}button.s{background:#333;color:var(--t);width:auto;padding:6px 10px;margin:2px}
+.row{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}.m{color:#999;font-size:13px}.err{color:#ff6b6b}
+.pending{color:var(--g)}.approved{color:#4cd964}.rejected{color:#ff6b6b}code{word-break:break-all}
+</style></head><body>
+<h1>BullPay Admin</h1><div id="v"></div>
+<script>
+let T=sessionStorage.a||'',A=null,msg='';
+const $=s=>document.querySelector(s),esc=s=>String(s).replace(/[&<>"']/g,c=>'&#'+c.charCodeAt(0)+';');
+async function api(p,b){const r=await fetch('/api/'+p,{method:'POST',headers:{'content-type':'application/json','x-token':T},body:JSON.stringify(b||{})});
+ const j=await r.json().catch(()=>({}));if(r.status==401&&p!='admin/login'){T='';sessionStorage.a='';A=null;draw()}if(!r.ok)throw new Error(j.e||'Error');return j}
+async function load(){if(!T)return draw();try{A=await api('admin/all');msg='';}catch(e){}draw()}
+async function act(p,b,ask){if(ask&&!confirm(ask))return;try{await api(p,b);await load()}catch(e){msg=e.message;draw()}}
+function draw(){const v=$('#v');
+ if(!T||!A){v.innerHTML='<div class="card"><input id="p" type="password" placeholder="Admin password"><button onclick="login()">Login</button><div class="err">'+esc(msg)+'</div></div>';return}
+ const pend=A.orders.filter(o=>o.status=='pending');
+ let h='<div class="card"><b>Naya user banayein</b><input id="nu" placeholder="User ID"><input id="np" placeholder="Password (min 6)"><button onclick="addUser()">Create user</button><div class="err">'+esc(msg)+'</div></div>';
+ h+='<div class="card"><b>USDT receive address</b><input id="ad" placeholder="Wallet address" value="'+esc(A.settings.address)+'"><input id="nw" placeholder="Network (TRC20/BEP20)" value="'+esc(A.settings.network)+'"><button onclick="act(\'admin/settings\',{address:$(\'#ad\').value,network:$(\'#nw\').value})">Save</button></div>';
+ h+='<h3>Orders ('+pend.length+' pending)</h3>'+(A.orders.slice().reverse().map(o=>'<div class="card"><div class="row"><b>'+esc(o.username||'?')+' - '+o.slot+' USDT</b><span class="'+o.status+'">'+o.status+'</span></div><div class="m">TxID: <code>'+esc(o.txid)+'</code><br>'+esc(o.bank.type)+' | '+esc(o.bank.bank)+' | '+esc(o.bank.number)+' | '+esc(o.bank.ifsc)+'<br>'+new Date(o.ts).toLocaleString()+'</div>'+
+  (o.status=='pending'?'<button class="s" onclick="act(\'admin/order\',{id:\''+o.id+'\',status:\'approved\'})">Approve</button><button class="s" onclick="act(\'admin/order\',{id:\''+o.id+'\',status:\'rejected\'})">Reject</button>':'')+'</div>').join('')||'<div class="card m">Koi order nahi</div>');
+ h+='<h3>Users</h3>'+A.users.map(u=>'<div class="card row"><div>'+esc(u.username)+(u.disabled?' <span class="rejected">(disabled)</span>':'')+'</div><div><button class="s" onclick="resetPass(\''+u.id+'\')">Password</button><button class="s" onclick="act(\'admin/user/toggle\',{id:\''+u.id+'\'})">'+(u.disabled?'Enable':'Disable')+'</button><button class="s" onclick="act(\'admin/user/del\',{id:\''+u.id+'\'},\'User delete karein?\')">Delete</button></div></div>').join('');
+ v.innerHTML=h}
+async function login(){try{const j=await api('admin/login',{p:$('#p').value});T=j.t;sessionStorage.a=T;load()}catch(e){msg=e.message;draw()}}
+function addUser(){act('admin/user/add',{u:$('#nu').value,p:$('#np').value})}
+function resetPass(id){const p=prompt('Naya password (min 6)');if(p)act('admin/user/pass',{id,p})}
+load();
+</script></body></html>
