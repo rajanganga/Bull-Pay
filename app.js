@@ -318,6 +318,25 @@ $('#notifBtn').onclick = () => {
   if (!state.notifs.every(n => n.read)) { API.readNotif(); setTimeout(() => loadData(), 500); }
 };
 
-if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js');
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').then(reg => {
+      // Check for updates every 60 seconds
+      setInterval(() => { reg.update(); }, 60000);
+      
+      // If a new service worker is found, reload the page
+      reg.onupdatefound = () => {
+        const installingWorker = reg.installing;
+        installingWorker.onstatechange = () => {
+          if (installingWorker.state === 'installed' && navigator.serviceWorker.controller) {
+            // New update available
+            toast('✨ New update available! Reloading...');
+            setTimeout(() => window.location.reload(), 2000);
+          }
+        };
+      };
+    });
+  });
+}
 
 (function boot() { if (API.token) loadData(); else showLogin(); })();
