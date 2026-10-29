@@ -1,33 +1,263 @@
-<!doctype html><html lang="hi"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1"><title>BullPay Admin</title>
-<style>
-:root{--g:#f5b301;--bg:#0e0f13;--c:#1b1d24;--t:#f2f2f2}
-*{box-sizing:border-box}body{margin:0 auto;max-width:720px;padding:16px;font-family:system-ui,sans-serif;background:var(--bg);color:var(--t)}
-h1{color:var(--g)}.card{background:var(--c);border-radius:14px;padding:14px;margin:10px 0}
-input,button{width:100%;padding:11px;margin:5px 0;border-radius:10px;border:1px solid #333;background:#111;color:var(--t);font-size:15px}
-button{background:var(--g);color:#000;border:0;font-weight:700}button.s{background:#333;color:var(--t);width:auto;padding:6px 10px;margin:2px}
-.row{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}.m{color:#999;font-size:13px}.err{color:#ff6b6b}
-.pending{color:var(--g)}.approved{color:#4cd964}.rejected{color:#ff6b6b}code{word-break:break-all}
-</style></head><body>
-<h1>BullPay Admin</h1><div id="v"></div>
-<script>
-let T=sessionStorage.a||'',A=null,msg='';
-const $=s=>document.querySelector(s),esc=s=>String(s).replace(/[&<>"']/g,c=>'&#'+c.charCodeAt(0)+';');
-async function api(p,b){const r=await fetch('/api/'+p,{method:'POST',headers:{'content-type':'application/json','x-token':T},body:JSON.stringify(b||{})});
- const j=await r.json().catch(()=>({}));if(r.status==401&&p!='admin/login'){T='';sessionStorage.a='';A=null;draw()}if(!r.ok)throw new Error(j.e||'Error');return j}
-async function load(){if(!T)return draw();try{A=await api('admin/all');msg='';}catch(e){}draw()}
-async function act(p,b,ask){if(ask&&!confirm(ask))return;try{await api(p,b);await load()}catch(e){msg=e.message;draw()}}
-function draw(){const v=$('#v');
- if(!T||!A){v.innerHTML='<div class="card"><input id="p" type="password" placeholder="Admin password"><button onclick="login()">Login</button><div class="err">'+esc(msg)+'</div></div>';return}
- const pend=A.orders.filter(o=>o.status=='pending');
- let h='<div class="card"><b>Naya user banayein</b><input id="nu" placeholder="User ID"><input id="np" placeholder="Password (min 6)"><button onclick="addUser()">Create user</button><div class="err">'+esc(msg)+'</div></div>';
- h+='<div class="card"><b>USDT receive address</b><input id="ad" placeholder="Wallet address" value="'+esc(A.settings.address)+'"><input id="nw" placeholder="Network (TRC20/BEP20)" value="'+esc(A.settings.network)+'"><button onclick="act(\'admin/settings\',{address:$(\'#ad\').value,network:$(\'#nw\').value})">Save</button></div>';
- h+='<h3>Orders ('+pend.length+' pending)</h3>'+(A.orders.slice().reverse().map(o=>'<div class="card"><div class="row"><b>'+esc(o.username||'?')+' - '+o.slot+' USDT</b><span class="'+o.status+'">'+o.status+'</span></div><div class="m">TxID: <code>'+esc(o.txid)+'</code><br>'+esc(o.bank.type)+' | '+esc(o.bank.bank)+' | '+esc(o.bank.number)+' | '+esc(o.bank.ifsc)+'<br>'+new Date(o.ts).toLocaleString()+'</div>'+
-  (o.status=='pending'?'<button class="s" onclick="act(\'admin/order\',{id:\''+o.id+'\',status:\'approved\'})">Approve</button><button class="s" onclick="act(\'admin/order\',{id:\''+o.id+'\',status:\'rejected\'})">Reject</button>':'')+'</div>').join('')||'<div class="card m">Koi order nahi</div>');
- h+='<h3>Users</h3>'+A.users.map(u=>'<div class="card row"><div>'+esc(u.username)+(u.disabled?' <span class="rejected">(disabled)</span>':'')+'</div><div><button class="s" onclick="resetPass(\''+u.id+'\')">Password</button><button class="s" onclick="act(\'admin/user/toggle\',{id:\''+u.id+'\'})">'+(u.disabled?'Enable':'Disable')+'</button><button class="s" onclick="act(\'admin/user/del\',{id:\''+u.id+'\'},\'User delete karein?\')">Delete</button></div></div>').join('');
- v.innerHTML=h}
-async function login(){try{const j=await api('admin/login',{p:$('#p').value});T=j.t;sessionStorage.a=T;load()}catch(e){msg=e.message;draw()}}
-function addUser(){act('admin/user/add',{u:$('#nu').value,p:$('#np').value})}
-function resetPass(id){const p=prompt('Naya password (min 6)');if(p)act('admin/user/pass',{id,p})}
-load();
-</script></body></html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BullPay — Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="bg-orbs"></div>
+  <div class="grid-bg"></div>
+  <div class="toast-wrap" id="toastWrap"></div>
+
+  <!-- Login -->
+  <div id="adminLogin" class="auth-screen hidden">
+    <div class="auth-card glass">
+      <div class="brand center-text" style="justify-content:center; margin-bottom:20px;">
+        <span class="brand-icon">⚡</span>
+        <span>Bull<span class="brand-accent">Pay</span> Admin</span>
+      </div>
+      <h1>Admin <span class="text-neon">Access</span></h1>
+      <p class="sub">Enter admin password</p>
+      <form id="adminLoginForm">
+        <label class="field">
+          <span>Password</span>
+          <input class="input" name="p" type="password" placeholder="••••••••" required />
+        </label>
+        <button class="btn btn-primary btn-lg btn-block" type="submit">Login →</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- App -->
+  <div id="adminApp" class="hidden">
+    <header class="app-header">
+      <div class="container">
+        <div class="brand">
+          <span class="brand-icon">⚡</span>
+          <span>Bull<span class="brand-accent">Pay</span> Admin</span>
+        </div>
+        <button id="adminLogout" class="btn btn-ghost btn-sm">Logout</button>
+      </div>
+    </header>
+
+    <main class="container" style="padding-top:20px; padding-bottom:60px;">
+      <div class="tabs">
+        <button class="tab active" data-tab="orders">📋 Orders</button>
+        <button class="tab" data-tab="users">👥 Users</button>
+        <button class="tab" data-tab="settings">⚙️ Settings</button>
+      </div>
+
+      <section id="tab-orders" class="tab-content">
+        <div class="card">
+          <div class="card-title">All Orders</div>
+          <div id="adminOrders"></div>
+        </div>
+      </section>
+
+      <section id="tab-users" class="tab-content hidden">
+        <div class="card">
+          <div class="card-title">
+            <span>Users</span>
+            <button id="addUserBtn" class="btn btn-primary btn-sm">+ Add User</button>
+          </div>
+          <div id="addUserForm" class="hidden" style="margin-bottom:16px;">
+            <form id="newUserForm" class="stack">
+              <label class="field"><span>Username</span><input class="input" name="u" required /></label>
+              <label class="field"><span>Password</span><input class="input" name="p" type="password" required /></label>
+              <div class="row">
+                <button class="btn btn-primary" type="submit">Create</button>
+                <button class="btn btn-ghost" type="button" id="cancelUserBtn">Cancel</button>
+              </div>
+            </form>
+          </div>
+          <div id="adminUsers"></div>
+        </div>
+      </section>
+
+      <section id="tab-settings" class="tab-content hidden">
+        <div class="card">
+          <div class="card-title">Payment Settings</div>
+          <form id="settingsForm" class="stack">
+            <label class="field">
+              <span>Wallet Address</span>
+              <input class="input" name="address" placeholder="Your crypto/UPI address" required />
+            </label>
+            <label class="field">
+              <span>Network</span>
+              <input class="input" name="network" placeholder="TRC20" required />
+            </label>
+            <button class="btn btn-primary" type="submit">Save Settings</button>
+          </form>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const A = {
+      token: localStorage.getItem('bp_admin') || '',
+      async req(path, body) {
+        const h = { 'Content-Type': 'application/json' };
+        if (this.token) h['x-token'] = this.token;
+        const r = await fetch('/api/' + path, { method: 'POST', headers: h, body: body ? JSON.stringify(body) : undefined });
+        const d = await r.json().catch(() => ({}));
+        if (!r.ok) throw new Error(d.e || 'Error');
+        return d;
+      },
+    };
+
+    const $ = s => document.querySelector(s);
+    const $$ = s => document.querySelectorAll(s);
+
+    function toast(m, t='ok') {
+      const el = document.createElement('div');
+      el.className = 'toast ' + t; el.textContent = m;
+      $('#toastWrap').appendChild(el);
+      setTimeout(() => el.remove(), 3500);
+    }
+    function esc(s) { const d = document.createElement('div'); d.textContent = s ?? ''; return d.innerHTML; }
+
+    let adminState = { users: [], banks: [], orders: [], settings: {} };
+
+    async function loadAll() {
+      const d = await A.req('admin/all', {});
+      adminState = d;
+      renderOrders(); renderUsers(); fillSettings();
+      $('#adminLogin').classList.add('hidden');
+      $('#adminApp').classList.remove('hidden');
+    }
+
+    function renderOrders() {
+      const wrap = $('#adminOrders');
+      if (!adminState.orders.length) {
+        wrap.innerHTML = '<p class="text-dim center-text text-sm" style="padding:20px 0;">No orders</p>';
+        return;
+      }
+      wrap.innerHTML = adminState.orders.map(o => `
+        <div class="list-item">
+          <div class="info">
+            <strong>₹${o.slot} — ${esc(o.username || 'unknown')}</strong>
+            <small>TXN: ${esc(o.txid)} • ${new Date(o.ts).toLocaleString()}</small>
+          </div>
+          <div class="row">
+            ${o.status === 'pending' ? `
+              <button class="btn btn-primary btn-sm" data-approve="${o.id}">Approve</button>
+              <button class="btn btn-danger btn-sm" data-reject="${o.id}">Reject</button>
+            ` : `<span class="badge badge-${o.status}">${o.status}</span>`}
+          </div>
+        </div>
+      `).join('');
+
+      wrap.querySelectorAll('[data-approve]').forEach(b => b.onclick = () => setStatus(b.dataset.approve, 'approved'));
+      wrap.querySelectorAll('[data-reject]').forEach(b => b.onclick = () => setStatus(b.dataset.reject, 'rejected'));
+    }
+
+    async function setStatus(id, status) {
+      try {
+        await A.req('admin/order', { id, status });
+        toast('✅ Order ' + status);
+        await loadAll();
+      } catch (e) { toast('❌ ' + e.message, 'err'); }
+    }
+
+    function renderUsers() {
+      const wrap = $('#adminUsers');
+      if (!adminState.users.length) {
+        wrap.innerHTML = '<p class="text-dim center-text text-sm" style="padding:20px 0;">No users</p>';
+        return;
+      }
+      wrap.innerHTML = adminState.users.map(u => `
+        <div class="list-item">
+          <div class="info">
+            <strong>${esc(u.username)}</strong>
+            <small>ID: ${esc(u.id)}</small>
+          </div>
+          <div class="row">
+            <button class="btn btn-ghost btn-sm" data-toggle="${u.id}">${u.disabled ? 'Enable' : 'Disable'}</button>
+            <button class="btn btn-ghost btn-sm" data-pass="${u.id}">Reset Pass</button>
+            <button class="btn btn-danger btn-sm" data-del="${u.id}">Delete</button>
+          </div>
+        </div>
+      `).join('');
+
+      wrap.querySelectorAll('[data-toggle]').forEach(b => b.onclick = async () => {
+        try { await A.req('admin/user/toggle', { id: b.dataset.toggle }); toast('✅ Updated'); await loadAll(); }
+        catch (e) { toast('❌ ' + e.message, 'err'); }
+      });
+      wrap.querySelectorAll('[data-pass]').forEach(b => b.onclick = async () => {
+        const p = prompt('New password (min 6 chars):');
+        if (!p) return;
+        try { await A.req('admin/user/pass', { id: b.dataset.pass, p }); toast('✅ Password reset'); }
+        catch (e) { toast('❌ ' + e.message, 'err'); }
+      });
+      wrap.querySelectorAll('[data-del]').forEach(b => b.onclick = async () => {
+        if (!confirm('Delete this user?')) return;
+        try { await A.req('admin/user/del', { id: b.dataset.del }); toast('✅ Deleted'); await loadAll(); }
+        catch (e) { toast('❌ ' + e.message, 'err'); }
+      });
+    }
+
+    function fillSettings() {
+      const f = $('#settingsForm');
+      f.address.value = adminState.settings.address || '';
+      f.network.value = adminState.settings.network || 'TRC20';
+    }
+
+    $('#settingsForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const f = e.target;
+      try {
+        await A.req('admin/settings', { address: f.address.value, network: f.network.value });
+        toast('✅ Settings saved');
+        await loadAll();
+      } catch (err) { toast('❌ ' + err.message, 'err'); }
+    });
+
+    $('#adminLoginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      try {
+        const { t } = await A.req('admin/login', { p: e.target.p.value });
+        A.token = t;
+        localStorage.setItem('bp_admin', t);
+        toast('✅ Welcome, Admin');
+        await loadAll();
+      } catch (err) { toast('❌ ' + err.message, 'err'); }
+    });
+
+    $('#adminLogout').onclick = () => {
+      localStorage.removeItem('bp_admin');
+      location.reload();
+    };
+
+    $$('.tab').forEach(t => t.onclick = () => {
+      $$('.tab').forEach(x => x.classList.remove('active'));
+      t.classList.add('active');
+      $$('.tab-content').forEach(x => x.classList.add('hidden'));
+      $('#tab-' + t.dataset.tab).classList.remove('hidden');
+    });
+
+    $('#addUserBtn').onclick = () => $('#addUserForm').classList.toggle('hidden');
+    $('#cancelUserBtn').onclick = () => $('#addUserForm').classList.add('hidden');
+    $('#newUserForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const f = e.target;
+      try {
+        await A.req('admin/user/add', { u: f.u.value, p: f.p.value });
+        toast('✅ User created');
+        f.reset(); $('#addUserForm').classList.add('hidden');
+        await loadAll();
+      } catch (err) { toast('❌ ' + err.message, 'err'); }
+    });
+
+    (function boot() {
+      if (A.token) loadAll().catch(() => { localStorage.removeItem('bp_admin'); showAdminLogin(); });
+      else showAdminLogin();
+      function showAdminLogin() { $('#adminLogin').classList.remove('hidden'); $('#adminApp').classList.add('hidden'); }
+    })();
+  </script>
+</body>
+</html>
