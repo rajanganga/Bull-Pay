@@ -13,7 +13,6 @@ const API = {
   addBank: (b) => API.req('bank/add', b),
   delBank: (id) => API.req('bank/del', { id }),
   createOrder: (o) => API.req('order', o),
-  setPin: (pin) => API.req('set-pin', { pin }),
   readNotif: () => API.req('notif/read', {}),
 };
 
@@ -21,11 +20,34 @@ const state = { slots: [], settings: {}, banks: [], orders: [], notifs: [], sele
 const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => document.querySelectorAll(sel);
 
+// Indian Banks List (Top 20 Banks with Logo URLs)
+const INDIAN_BANKS = [
+  { name: "State Bank of India (SBI)", logo: "https://upload.wikimedia.org/wikipedia/commons/c/cc/SBI-logo.svg" },
+  { name: "HDFC Bank", logo: "https://upload.wikimedia.org/wikipedia/commons/2/28/HDFC_Bank_Logo.svg" },
+  { name: "ICICI Bank", logo: "https://upload.wikimedia.org/wikipedia/commons/1/12/ICICI_Bank_Logo.svg" },
+  { name: "Axis Bank", logo: "https://upload.wikimedia.org/wikipedia/commons/c/c5/Axis_Bank_logo.svg" },
+  { name: "Kotak Mahindra Bank", logo: "https://upload.wikimedia.org/wikipedia/commons/6/6b/Kotak_Mahindra_Bank_logo.svg" },
+  { name: "Punjab National Bank (PNB)", logo: "https://upload.wikimedia.org/wikipedia/commons/5/5d/Punjab_National_Bank_logo.svg" },
+  { name: "Bank of Baroda", logo: "https://upload.wikimedia.org/wikipedia/commons/0/0b/Bank_of_Baroda_logo.svg" },
+  { name: "Canara Bank", logo: "https://upload.wikimedia.org/wikipedia/commons/4/4a/Canara_Bank_logo.svg" },
+  { name: "Union Bank of India", logo: "https://upload.wikimedia.org/wikipedia/commons/2/2b/Union_Bank_of_India_logo.svg" },
+  { name: "IndusInd Bank", logo: "https://upload.wikimedia.org/wikipedia/commons/6/6d/IndusInd_Bank_logo.svg" },
+  { name: "Yes Bank", logo: "https://upload.wikimedia.org/wikipedia/commons/4/44/Yes_Bank_logo.svg" },
+  { name: "IDFC First Bank", logo: "https://upload.wikimedia.org/wikipedia/commons/a/a4/IDFC_First_Bank_logo.svg" },
+  { name: "Bank of India", logo: "https://upload.wikimedia.org/wikipedia/commons/1/1e/Bank_of_India_logo.svg" },
+  { name: "Central Bank of India", logo: "https://upload.wikimedia.org/wikipedia/commons/e/e2/Central_Bank_of_India_logo.svg" },
+  { name: "Indian Bank", logo: "https://upload.wikimedia.org/wikipedia/commons/d/d5/Indian_Bank_logo.svg" },
+  { name: "Indian Overseas Bank", logo: "https://upload.wikimedia.org/wikipedia/commons/f/f1/Indian_Overseas_Bank_logo.svg" },
+  { name: "UCO Bank", logo: "https://upload.wikimedia.org/wikipedia/commons/1/1a/UCO_Bank_logo.svg" },
+  { name: "Bank of Maharashtra", logo: "https://upload.wikimedia.org/wikipedia/commons/8/8b/Bank_of_Maharashtra_logo.svg" },
+  { name: "Punjab & Sind Bank", logo: "https://upload.wikimedia.org/wikipedia/commons/3/36/Punjab_%26_Sind_Bank_logo.svg" },
+  { name: "Federal Bank", logo: "https://upload.wikimedia.org/wikipedia/commons/6/6f/Federal_Bank_logo.svg" }
+].sort((a, b) => a.name.localeCompare(b.name));
+
 function toast(msg, type = 'ok') { const el = document.createElement('div'); el.className = 'toast ' + type; el.textContent = msg; $('#toastWrap').appendChild(el); setTimeout(() => el.remove(), 3500); }
 function money(n) { return Number(n || 0).toLocaleString('en-US'); }
 function escape(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
 
-// Rate Calculate karne ka formula (500 se start, har 100 par +2)
 function getRate(amount) {
   if (!amount) return 0;
   return 125 + ((amount - 500) / 100) * 2;
@@ -52,7 +74,6 @@ async function loadData() {
     state.slots = d.slots || []; state.settings = d.settings || {};
     state.banks = d.banks || []; state.orders = d.orders || []; state.notifs = d.notifications || [];
     
-    // Agar pehle se koi slot select nahi hai, toh default $500 select karlo
     if (state.selectedSlot === null && state.slots.length) state.selectedSlot = state.slots[0];
     
     showMain(); 
@@ -75,7 +96,6 @@ function renderAll() {
   renderNotifs(); 
 }
 
-// Top Rate Card ko update karna
 function updateLiveRateCard() {
   const amountEl = $('#liveRateAmount');
   const priceEl = $('#liveRatePrice');
@@ -108,8 +128,8 @@ function renderSlots() {
   
   grid.querySelectorAll('.slot').forEach(el => el.addEventListener('click', () => {
     state.selectedSlot = Number(el.dataset.slot);
-    renderSlots();         // Highlight update karo
-    updateLiveRateCard();  // Top card update karo
+    renderSlots();         
+    updateLiveRateCard();  
   }));
 }
 
@@ -178,18 +198,114 @@ function renderBankSelect() {
   }
 }
 
+// CUSTOM BANK DROPDOWN SEARCH LOGIC
+const bankSearchInput = $('#bankSearch');
+const bankDropdown = $('#bankDropdown');
+const selectedBankInput = $('#selectedBank');
+
+if (bankSearchInput) {
+  function renderDropdown(query) {
+    const filtered = INDIAN_BANKS.filter(b => b.name.toLowerCase().includes(query.toLowerCase()));
+    if (!filtered.length) {
+      bankDropdown.innerHTML = '<div style="padding:10px; font-size:13px; color:var(--text-dim);">No bank found</div>';
+      return;
+    }
+    bankDropdown.innerHTML = filtered.map(b => `
+      <div class="bank-option" data-name="${b.name}">
+        <img src="${b.logo}" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0Ij48cGF0aCBmaWxsPSIjY2NjIiBkPSJNMTIgMkM2LjQ4IDIgMiA2LjQ4IDIgMTJzNC40OCAxMCAxMCAxMCAxMC00LjQ4IDEwLTEwUzE3LjUyIDIgMTIgMnptMCAxOGMtNC40MSAwLTgtMy41OS04LThzMy41OS04IDgtOCA4IDMuNTkgOCA4LTQuNDEgOC04IDh6Ii8+PC9zdmc+'" alt="Logo">
+        <span>${b.name}</span>
+      </div>
+    `).join('');
+
+    bankDropdown.querySelectorAll('.bank-option').forEach(opt => {
+      opt.addEventListener('click', () => {
+        bankSearchInput.value = opt.dataset.name;
+        selectedBankInput.value = opt.dataset.name;
+        bankDropdown.classList.remove('active');
+      });
+    });
+  }
+
+  bankSearchInput.addEventListener('focus', () => { renderDropdown(bankSearchInput.value); bankDropdown.classList.add('active'); });
+  bankSearchInput.addEventListener('input', (e) => { renderDropdown(e.target.value); bankDropdown.classList.add('active'); });
+  
+  // Close dropdown when clicked outside
+  document.addEventListener('click', (e) => {
+    if (!bankSearchInput.contains(e.target) && !bankDropdown.contains(e.target)) {
+      bankDropdown.classList.remove('active');
+    }
+  });
+}
+
+// HELP BUTTON TOGGLE
+$('#helpBtn').addEventListener('click', () => {
+  $('#helpMenu').classList.toggle('active');
+});
+
+// ORDER SUBMIT (PIN removed)
+$('#orderForm').addEventListener('submit', async (e) => {
+  e.preventDefault(); const form = e.target; const btn = form.querySelector('button[type="submit"]');
+  if (state.selectedSlot === null) return toast('Select amount', 'err');
+  if (!form.bankId.value) return toast('Add bank first', 'err');
+  const file = form.receipt.files[0]; if (!file) return toast('Upload screenshot', 'err');
+  if (file.size > 2.5 * 1024 * 1024) return toast('Image too large (Max 2MB)', 'err');
+  
+  btn.disabled = true; btn.textContent = 'Uploading...';
+  const reader = new FileReader();
+  reader.onload = async (event) => {
+    try {
+      await API.createOrder({ bankId: form.bankId.value, slot: state.selectedSlot, txid: form.txid.value.trim(), receipt: event.target.result });
+      toast('✅ Submitted'); form.reset(); await loadData();
+    } catch (err) { toast('❌ ' + err.message, 'err'); }
+    btn.disabled = false; btn.textContent = 'Submit Order →';
+  };
+  reader.readAsDataURL(file);
+});
+
+$('#addBankBtn').addEventListener('click', () => $('#addBankForm').classList.toggle('hidden'));
+$('#cancelBankBtn').addEventListener('click', () => $('#addBankForm').classList.add('hidden'));
+$('#newBankForm').addEventListener('submit', async (e) => {
+  e.preventDefault(); const form = e.target; const btn = form.querySelector('button[type="submit"]');
+  
+  if (!selectedBankInput.value) return toast('Please select a bank from dropdown', 'err');
+
+  btn.disabled = true; btn.textContent = 'Saving...';
+  try { 
+    await API.addBank({ 
+      type: form.type.value, 
+      number: form.number.value.trim(), 
+      bank: selectedBankInput.value, 
+      ifsc: form.ifsc.value.trim().toUpperCase() 
+    }); 
+    toast('✅ Bank added'); 
+    form.reset(); 
+    selectedBankInput.value = ''; // Reset hidden input
+    $('#addBankForm').classList.add('hidden'); 
+    await loadData(); 
+  } catch (err) { 
+    toast('❌ ' + err.message, 'err'); 
+  }
+  btn.disabled = false; btn.textContent = 'Save Bank';
+});
+
+$('#logoutBtn').addEventListener('click', () => { localStorage.removeItem('bp_token'); API.token = ''; location.reload(); });
+
+$$('.tab').forEach(tab => tab.addEventListener('click', () => {
+  $$('.tab').forEach(t => t.classList.remove('active')); tab.classList.add('active');
+  $$('.tab-content').forEach(c => c.classList.add('hidden')); $('#tab-' + tab.dataset.tab).classList.remove('hidden');
+}));
+
 function renderOrders() {
   const list = $('#ordersList');
   if (!state.orders.length) { list.innerHTML = '<p class="text-dim center-text text-sm" style="padding:20px 0;">No orders yet</p>'; return; }
-  
   list.innerHTML = state.orders.map(o => {
     const rate = getRate(o.slot); 
     return `
     <div class="list-item" style="flex-direction:column; align-items:flex-start;">
       <div style="display:flex; justify-content:space-between; width:100%;">
         <div class="info">
-          <strong>$${money(o.slot)} (@ ₹${rate}/USDT) — ${escape(o.status)}</strong>
-          <small>TXN: ${escape(o.txid)} • ${new Date(o.ts).toLocaleString()}</small>
+          <strong>$${money(o.slot)} (@ ₹${rate}) — ${escape(o.status)}</strong>
+          <small>TXN: ${escape(o.txid)}</small>
         </div>
         <span class="badge badge-${o.status}">${o.status}</span>
       </div>
@@ -216,46 +332,6 @@ $('#notifBtn').onclick = () => {
   $('#notifPanel').classList.toggle('hidden');
   if (!state.notifs.every(n => n.read)) { API.readNotif(); setTimeout(() => loadData(), 500); }
 };
-
-$$('.tab').forEach(tab => tab.addEventListener('click', () => {
-  $$('.tab').forEach(t => t.classList.remove('active')); tab.classList.add('active');
-  $$('.tab-content').forEach(c => c.classList.add('hidden')); $('#tab-' + tab.dataset.tab).classList.remove('hidden');
-}));
-
-$('#orderForm').addEventListener('submit', async (e) => {
-  e.preventDefault(); const form = e.target; const btn = form.querySelector('button[type="submit"]');
-  if (state.selectedSlot === null) return toast('Select amount', 'err');
-  if (!form.bankId.value) return toast('Add bank first', 'err');
-  const file = form.receipt.files[0]; if (!file) return toast('Upload screenshot', 'err');
-  if (file.size > 2.5 * 1024 * 1024) return toast('Image too large (Max 2MB)', 'err');
-  
-  btn.disabled = true; btn.textContent = 'Uploading...';
-  const reader = new FileReader();
-  reader.onload = async (event) => {
-    try {
-      await API.createOrder({ bankId: form.bankId.value, slot: state.selectedSlot, txid: form.txid.value.trim(), pin: form.pin.value, receipt: event.target.result });
-      toast('✅ Submitted'); form.reset(); await loadData();
-    } catch (err) { toast('❌ ' + err.message, 'err'); }
-    btn.disabled = false; btn.textContent = 'Submit Order →';
-  };
-  reader.readAsDataURL(file);
-});
-
-$('#pinForm').addEventListener('submit', async (e) => {
-  e.preventDefault();
-  try { await API.setPin(e.target.pin.value); toast('✅ PIN Saved'); e.target.reset(); } catch (err) { toast('❌ ' + err.message, 'err'); }
-});
-
-$('#addBankBtn').addEventListener('click', () => $('#addBankForm').classList.toggle('hidden'));
-$('#cancelBankBtn').addEventListener('click', () => $('#addBankForm').classList.add('hidden'));
-$('#newBankForm').addEventListener('submit', async (e) => {
-  e.preventDefault(); const form = e.target; const btn = form.querySelector('button[type="submit"]');
-  btn.disabled = true; btn.textContent = 'Saving...';
-  try { await API.addBank({ type: form.type.value, number: form.number.value.trim(), bank: form.bank.value.trim(), ifsc: form.ifsc.value.trim().toUpperCase() }); toast('✅ Bank added'); form.reset(); $('#addBankForm').classList.add('hidden'); await loadData(); } catch (err) { toast('❌ ' + err.message, 'err'); }
-  btn.disabled = false; btn.textContent = 'Save Bank';
-});
-
-$('#logoutBtn').addEventListener('click', () => { localStorage.removeItem('bp_token'); API.token = ''; location.reload(); });
 
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js');
 
