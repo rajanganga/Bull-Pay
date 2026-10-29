@@ -1,16 +1,17 @@
-// BullPay server - Node 18+, koi npm install nahi chahiye.  Run: ADMIN_PASS=apna_password node server.js
+// BullPay server - Node 18+
 const http = require('http'), fs = require('fs'), c = require('crypto'), path = require('path');
-const FILE = path.join(process.env.DATA_DIR || __dirname, 'data.json'); // hosting par DATA_DIR=/data set karein
+const FILE = path.join(process.env.DATA_DIR || __dirname, 'data.json');
 const ADMIN_PASS = process.env.ADMIN_PASS || 'admin123';
 const PORT = process.env.PORT || 3000;
-const SLOTS = Array.from({ length: 11 }, (_, i) => 500 + i * 100); // 500, 600 ... 1500
+const SLOTS = Array.from({ length: 11 }, (_, i) => 500 + i * 100); // 500 to 1500
 
-const DEF = { users: [], banks: [], orders: [], settings: { address: '', network: 'TRC20' } };
+const DEF = { users: [], banks: [], orders: [], settings: { address: '', network: 'TRC20' }, logs: [] };
 let D = fs.existsSync(FILE) ? JSON.parse(fs.readFileSync(FILE, 'utf8')) : DEF;
-// Free hosting par data bachane ke liye Supabase (SUPABASE_URL + SUPABASE_KEY set karein)
+if (!D.logs) D.logs = []; // Purane data ke liye
+
 const SU = (process.env.SUPABASE_URL || '').replace(/\/$/, ''), SK = process.env.SUPABASE_KEY || '';
 const H = { apikey: SK, 'content-type': 'application/json' };
-if (SK.startsWith('eyJ')) H.Authorization = 'Bearer ' + SK; // purani service_role key (JWT) ke liye; nayi sb_secret_ key me sirf apikey chalti hai
+if (SK.startsWith('eyJ')) H.Authorization = 'Bearer ' + SK;
 let q = Promise.resolve();
 const save = () => {
   if (!SU) return fs.writeFileSync(FILE, JSON.stringify(D, null, 1));
@@ -23,7 +24,7 @@ async function init() {
   if (!SU) return;
   const r = await fetch(SU + '/rest/v1/store?id=eq.1&select=data', { headers: H });
   if (!r.ok) throw new Error('Supabase connect nahi hua: ' + await r.text());
-  const j = await r.json(); if (j[0]) D = j[0].data; else save();
+  const j = await r.json(); if (j[0]) { D = j[0].data; if (!D.logs) D.logs = []; } else save();
 }
 const uid = () => c.randomBytes(6).toString('hex');
 const hash = (p, s) => c.scryptSync(p, s, 32).toString('hex');
@@ -37,39 +38,41 @@ function send(res, code, obj) {
 }
 function page(res, f) {
   res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
-  const p = [path.join(__dirname, 'public', f), path.join(__dirname, f)].find(x => fs.existsSync(x)); // public/ ya same folder dono chalenge
+  const p = [path.join(__dirname, 'public', f), path.join(__dirname, f)].find(x => fs.existsSync(x));
   res.end(fs.readFileSync(p));
 }
-function throttle(ip) { // 10 galat login ke baad 5 min block
+function throttle(ip) {
   const f = fails[ip];
   return f && f.n >= 10 && Date.now() - f.t < 300000;
 }
 function bad(ip) { const f = fails[ip] || { n: 0 }; fails[ip] = { n: f.n + 1, t: Date.now() }; }
 
+function logAction(userId, action, details = '') {
+  D.logs.unshift({ id: uid(), userId, action, details, ts: Date.now() });
+  if (D.logs.length > 1000) D.logs = D.logs.slice(0, 1000); // Max 1000 logs
+  save();
+}
+
 const server = http.createServer((req, res) => {
   const url = new URL(req.url, 'http://x');
 
-  // ==============================================================
-  // NAYA CODE: Static files (CSS, JS, Images) serve karne ke liye
-  // ==============================================================
+  // Static files
   if (req.method === 'GET' && (url.pathname.endsWith('.css') || url.pathname.endsWith('.js') || url.pathname.endsWith('.png') || url.pathname.endsWith('.jpg') || url.pathname.endsWith('.ico'))) {
     const ext = path.extname(url.pathname);
     const mime = { '.css': 'text/css', '.js': 'application/javascript', '.png': 'image/png', '.jpg': 'image/jpeg', '.ico': 'image/x-icon' };
     const filePath = path.join(__dirname, url.pathname);
-    
     if (fs.existsSync(filePath)) {
       res.writeHead(200, { 'content-type': mime[ext] || 'text/plain' });
       return res.end(fs.readFileSync(filePath));
     }
   }
-  // ==============================================================
 
   if (req.method === 'GET' && url.pathname === '/') return page(res, 'app.html');
   if (req.method === 'GET' && url.pathname === '/admin') return page(res, 'admin.html');
   if (!url.pathname.startsWith('/api/')) return send(res, 404, { e: 'Not found' });
 
   let body = '';
-  req.on('data', d => { body += d; if (body.length > 1e5) req.destroy(); });
+  req.on('data', d => { body += d; if (body.length > 3e6) req.destroy(); }); // 3MB limit for images
   req.on('end', () => {
     let b = {}; try { b = body ? JSON.parse(body) : {}; } catch { return send(res, 400, { e: 'Bad request' }); }
     const r = url.pathname.slice(5), ip = req.socket.remoteAddress;
@@ -80,6 +83,7 @@ const server = http.createServer((req, res) => {
       const u = D.users.find(x => x.username === clean(b.u));
       if (!u || u.disabled || !eq(hash(String(b.p), u.salt), u.hash)) { bad(ip); return send(res, 401, { e: 'ID ya password galat hai' }); }
       const t = uid() + uid(); sessions[t] = { role: 'user', id: u.id };
+      logAction(u.id, 'Login', 'User logged in successfully');
       return send(res, 200, { t });
     }
     if (r === 'admin/login') {
@@ -93,7 +97,7 @@ const server = http.createServer((req, res) => {
     if (s.role === 'admin') {
       if (r === 'admin/all') return send(res, 200, {
         users: D.users.map(({ id, username, disabled }) => ({ id, username, disabled })),
-        banks: D.banks, orders: D.orders, settings: D.settings
+        banks: D.banks, orders: D.orders, settings: D.settings, logs: D.logs
       });
       if (r === 'admin/user/add') {
         const u = clean(b.u, 30), p = String(b.p || '');
@@ -142,16 +146,32 @@ const server = http.createServer((req, res) => {
     if (r === 'bank/add') {
       const t = clean(b.type, 20), n = clean(b.number, 30), bk = clean(b.bank, 60), i = clean(b.ifsc, 11).toUpperCase();
       if (!t || !/^\d{6,25}$/.test(n) || !bk || !/^[A-Z]{4}0[A-Z0-9]{6}$/.test(i)) return send(res, 400, { e: 'Details sahi se bharein (IFSC format: SBIN0001234)' });
-      D.banks.push({ id: uid(), userId: me, type: t, number: n, bank: bk, ifsc: i }); save(); return send(res, 200, {});
+      D.banks.push({ id: uid(), userId: me, type: t, number: n, bank: bk, ifsc: i }); save(); 
+      logAction(me, 'Bank Added', `Added ${bk} account ending in ${n.slice(-4)}`);
+      return send(res, 200, {});
     }
-    if (r === 'bank/del') { D.banks = D.banks.filter(x => !(x.id === b.id && x.userId === me)); save(); return send(res, 200, {}); }
+    if (r === 'bank/del') { 
+      D.banks = D.banks.filter(x => !(x.id === b.id && x.userId === me)); save(); 
+      logAction(me, 'Bank Deleted', `Deleted bank ID: ${b.id}`);
+      return send(res, 200, {}); 
+    }
     if (r === 'order') {
       const bank = D.banks.find(x => x.id === b.bankId && x.userId === me), tx = clean(b.txid, 100);
       if (!SLOTS.includes(b.slot) || !bank) return send(res, 400, { e: 'Slot ya bank chunein' });
       if (tx.length < 8) return send(res, 400, { e: 'Sahi Transaction ID daalein' });
       if (D.orders.some(x => x.txid.toLowerCase() === tx.toLowerCase())) return send(res, 400, { e: 'Ye Transaction ID pehle use ho chuki hai' });
-      D.orders.push({ id: uid(), userId: me, username: D.users.find(x => x.id === me)?.username, slot: b.slot, bank, txid: tx, status: 'pending', ts: Date.now() });
-      save(); return send(res, 200, {});
+      
+      // Base64 image check
+      let receipt = null;
+      if (b.receipt && typeof b.receipt === 'string' && b.receipt.startsWith('data:image/')) {
+        if (b.receipt.length > 2.5e6) return send(res, 400, { e: 'Image too large (Max 2MB)' });
+        receipt = b.receipt;
+      }
+
+      D.orders.push({ id: uid(), userId: me, username: D.users.find(x => x.id === me)?.username, slot: b.slot, bank, txid: tx, receipt, status: 'pending', ts: Date.now() });
+      save(); 
+      logAction(me, 'Order Submitted', `Amount: $${b.slot}, TXN: ${tx}`);
+      return send(res, 200, {});
     }
     send(res, 404, { e: 'Not found' });
   });
