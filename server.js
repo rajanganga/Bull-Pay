@@ -124,6 +124,24 @@ const server = http.createServer((req, res) => {
         logAction(o.userId, 'Order Updated', `Admin ${b.status} order $${o.slot}`);
         return send(res, 200, {});
       }
+            if (r === 'admin/order') {
+        const o = D.orders.find(x => x.id === b.id);
+        if (!o || !['approved', 'rejected'].includes(b.status)) return send(res, 400, { e: 'Invalid' });
+        o.status = b.status; save(); 
+        notify(o.userId, 'Order Update', `Your order of $${o.slot} has been ${b.status}.`);
+        logAction(o.userId, 'Order Updated', `Admin ${b.status} order $${o.slot}`);
+        return send(res, 200, {});
+      }
+      // NAYA CODE: Order Delete karne ke liye
+      if (r === 'admin/order/del') {
+        const o = D.orders.find(x => x.id === b.id);
+        if (!o) return send(res, 404, { e: 'Order not found' });
+        D.orders = D.orders.filter(x => x.id !== b.id);
+        save();
+        notify(o.userId, 'Order Deleted', `Your order of $${o.slot} has been removed by admin.`);
+        logAction(o.userId, 'Order Deleted', `Admin deleted order $${o.slot}`);
+        return send(res, 200, {});
+      }
       if (r === 'admin/settings') {
         D.settings = { address: clean(b.address, 120), network: clean(b.network, 20) || 'TRC20' };
         save(); return send(res, 200, {});
