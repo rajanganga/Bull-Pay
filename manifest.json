@@ -1,7 +1,7 @@
 {
   "name": "BullPay Wallet",
   "short_name": "BullPay",
-  "start_url": "/",
+  "start_url": "/bull-pay.onrender.com",
   "display": "standalone",
   "background_color": "#090D18",
   "theme_color": "#B5FF4A",
@@ -20,5 +20,9 @@
       "purpose": "any"
     }
   ],
-  "id": "bullpay"
+  "id": "bullpay",
+  "dir": "auto",
+  "categories": [
+    "networking"
+  ]
 }
