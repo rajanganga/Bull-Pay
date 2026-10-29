@@ -12,20 +12,11 @@
     /* Rate Card Styles */
     .rate-card {
       background: linear-gradient(135deg, rgba(181,255,74,0.15) 0%, rgba(9,13,24,0.8) 100%);
-      border: 1px solid var(--neon);
-      border-radius: 16px;
-      padding: 16px 20px;
-      margin-bottom: 20px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      box-shadow: 0 0 20px rgba(181, 255, 74, 0.15);
-      animation: pulse-border 2s infinite alternate;
+      border: 1px solid var(--neon); border-radius: 16px; padding: 16px 20px; margin-bottom: 20px;
+      display: flex; justify-content: space-between; align-items: center;
+      box-shadow: 0 0 20px rgba(181, 255, 74, 0.15); animation: pulse-border 2s infinite alternate;
     }
-    @keyframes pulse-border {
-      from { box-shadow: 0 0 10px rgba(181, 255, 74, 0.1); }
-      to { box-shadow: 0 0 25px rgba(181, 255, 74, 0.4); }
-    }
+    @keyframes pulse-border { from { box-shadow: 0 0 10px rgba(181, 255, 74, 0.1); } to { box-shadow: 0 0 25px rgba(181, 255, 74, 0.4); } }
     .rate-card small { font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; }
     .rate-card p { font-size: 22px; font-weight: 800; margin-top: 4px; }
     .rate-card .amount { color: #fff; }
@@ -38,7 +29,7 @@
     .slot .slot-rate { font-size: 11px; font-weight: 600; margin-top: 4px; padding: 2px 6px; border-radius: 4px; background: rgba(255,255,255,0.1); }
     .slot.selected .slot-rate { background: rgba(9,13,24,0.2); }
 
-    /* Bank Dropdown with Search */
+    /* Bank Dropdown */
     .bank-select-wrapper { position: relative; }
     .bank-dropdown {
       position: absolute; top: 100%; left: 0; right: 0;
@@ -57,26 +48,20 @@
 
     /* Floating Help Button */
     .help-btn {
-      position: fixed; bottom: 24px; right: 24px; z-index: 999;
-      width: 60px; height: 60px; border-radius: 50%;
-      background: var(--neon); color: #090D18;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 28px; box-shadow: 0 0 20px rgba(181,255,74,0.5);
-      cursor: pointer; transition: transform 0.2s; border: none;
+      position: fixed; bottom: 24px; right: 24px; z-index: 999; width: 60px; height: 60px; border-radius: 50%;
+      background: var(--neon); color: #090D18; display: flex; align-items: center; justify-content: center;
+      font-size: 28px; box-shadow: 0 0 20px rgba(181,255,74,0.5); cursor: pointer; transition: transform 0.2s; border: none;
       animation: float 3s ease-in-out infinite;
     }
     .help-btn:hover { transform: scale(1.1); }
     .help-menu {
-      position: fixed; bottom: 95px; right: 24px; z-index: 998;
-      background: var(--bg2); border: 1px solid var(--border); border-radius: 12px;
-      padding: 10px; display: flex; flex-direction: column; gap: 8px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.5); display: none;
+      position: fixed; bottom: 95px; right: 24px; z-index: 998; background: var(--bg2); border: 1px solid var(--border);
+      border-radius: 12px; padding: 10px; display: flex; flex-direction: column; gap: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); display: none;
     }
     .help-menu.active { display: flex; }
     .help-menu a {
-      display: flex; align-items: center; gap: 10px; padding: 10px 15px;
-      border-radius: 8px; text-decoration: none; color: var(--text);
-      font-size: 14px; font-weight: 600; transition: background 0.2s; background: rgba(255,255,255,0.05);
+      display: flex; align-items: center; gap: 10px; padding: 10px 15px; border-radius: 8px;
+      text-decoration: none; color: var(--text); font-size: 14px; font-weight: 600; transition: background 0.2s; background: rgba(255,255,255,0.05);
     }
     .help-menu a:hover { background: rgba(255,255,255,0.1); }
     .help-menu a img { width: 20px; height: 20px; }
@@ -121,16 +106,9 @@
         <div id="notifList"></div>
       </div>
 
-      <!-- TOP RATE CARD -->
       <div class="rate-card">
-        <div>
-          <small>Selected Order</small>
-          <p class="amount" id="liveRateAmount">$0</p>
-        </div>
-        <div>
-          <small>Live Rate</small>
-          <p class="price" id="liveRatePrice">₹0/USDT</p>
-        </div>
+        <div><small>Selected Order</small><p class="amount" id="liveRateAmount">$0</p></div>
+        <div><small>Live Rate</small><p class="price" id="liveRatePrice">₹0/USDT</p></div>
       </div>
 
       <div class="card balance-card">
@@ -173,7 +151,6 @@
         </div>
       </section>
 
-      <!-- TAB: BANKS (PIN Hata Diya) -->
       <section id="tab-banks" class="tab-content hidden">
         <div class="card">
           <div class="card-title"><span>Your Bank Accounts</span><button id="addBankBtn" class="btn btn-primary btn-sm">+ Add</button></div>
@@ -184,7 +161,6 @@
           <form id="newBankForm">
             <label class="field"><span>Account Type</span><select class="input" name="type" required><option value="Savings">Savings</option><option value="Current">Current</option></select></label>
             
-            <!-- Naya Bank Dropdown with Logo -->
             <label class="field">
               <span>Bank Name</span>
               <div class="bank-select-wrapper">
@@ -192,6 +168,12 @@
                 <input type="hidden" name="bank" id="selectedBank" required />
                 <div class="bank-dropdown" id="bankDropdown"></div>
               </div>
+            </label>
+
+            <!-- MANUAL OTHER BANK INPUT (By default Hidden) -->
+            <label class="field hidden" id="otherBankField">
+              <span>Type Bank Name</span>
+              <input type="text" class="input" id="otherBankInput" placeholder="Enter your bank name" />
             </label>
 
             <label class="field"><span>Account Number</span><input class="input" name="number" placeholder="Account Number" required /></label>
@@ -210,10 +192,8 @@
     </main>
   </div>
 
-  <!-- 24x7 Live Support Button -->
   <button class="help-btn" id="helpBtn">💬</button>
   <div class="help-menu" id="helpMenu">
-    <!-- YAHAN APNA WHATSAPP NUMBER AUR TELEGRAM LINK DAALEIN -->
     <a href="https://wa.me/919999999999" target="_blank">
       <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="WA"> WhatsApp
     </a>
