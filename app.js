@@ -16,7 +16,7 @@ const API = {
   readNotif: () => API.req('notif/read', {}),
 };
 
-const state = { slots: [], settings: {}, banks: [], orders: [], notifs: [], selectedSlot: null };
+const state = { slots: [], settings: {}, banks: [], orders: [], notifs: [], selectedSlot: null, selectedNetwork: null };
 const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => document.querySelectorAll(sel);
 
@@ -101,18 +101,47 @@ function drawChart() {
   const ctx = canvas.getContext('2d'); const w = canvas.width = canvas.offsetWidth; const h = canvas.height = 120;
   ctx.clearRect(0, 0, w, h);
   const data = state.orders.slice(0, 7).reverse();
-  if (data.length < 2) { ctx.fillStyle = 'rgba(181,255,74,0.5)'; ctx.font = '14px Inter'; ctx.textAlign = 'center'; ctx.fillText('Not enough data', w/2, h/2); return; }
+  if (data.length < 2) { ctx.fillStyle = 'rgba(0,255,65,0.5)'; ctx.font = '14px Rajdhani'; ctx.textAlign = 'center'; ctx.fillText('Not enough data', w/2, h/2); return; }
   const max = Math.max(...data.map(o => o.slot), 100); const stepX = w / (data.length - 1);
   ctx.beginPath(); ctx.moveTo(0, h - (data[0].slot / max) * (h - 20));
   for (let i = 1; i < data.length; i++) ctx.lineTo(i * stepX, h - (data[i].slot / max) * (h - 20));
-  ctx.strokeStyle = '#B5FF4A'; ctx.lineWidth = 2; ctx.stroke();
+  ctx.strokeStyle = '#00FF41'; ctx.lineWidth = 2; ctx.stroke();
   ctx.lineTo(w, h); ctx.lineTo(0, h); ctx.closePath();
-  const grad = ctx.createLinearGradient(0, 0, 0, h); grad.addColorStop(0, 'rgba(181, 255, 74, 0.2)'); grad.addColorStop(1, 'rgba(181, 255, 74, 0)');
+  const grad = ctx.createLinearGradient(0, 0, 0, h); grad.addColorStop(0, 'rgba(0, 255, 65, 0.2)'); grad.addColorStop(1, 'rgba(0, 255, 65, 0)');
   ctx.fillStyle = grad; ctx.fill();
 }
 
-function renderPaymentAddress() { $('#payNetwork').textContent = state.settings.network || 'TRC20'; $('#payAddress').textContent = state.settings.address || 'Address not set by admin'; }
-$('#copyAddrBtn').addEventListener('click', () => { const addr = state.settings.address || ''; if (!addr) return toast('Address not set', 'err'); navigator.clipboard.writeText(addr).then(() => toast('✅ Copied')); });
+// NETWORK SELECTION LOGIC
+function renderPaymentAddress() {
+  const select = $('#networkSelect');
+  const details = $('#paymentDetails');
+  const addrText = $('#addressText');
+  const badge = $('#networkBadge');
+
+  if (select) {
+    select.addEventListener('change', (e) => {
+      const net = e.target.value;
+      if (!net) {
+        details.classList.add('hidden');
+        return;
+      }
+      let address = '';
+      if (net === 'TRC20') address = state.settings.trc20 || 'TYWTuvc8kCBbYm98frNgAkVhVrdR7hXPrh';
+      else if (net === 'BEP20') address = state.settings.bep20 || '0x7e0de6e0949cd79fbf87c38dd2b6b4ac49e6f28f';
+      else if (net === 'ERC20') address = state.settings.erc20 || '0x7e0de6e0949cd79fbf87c38dd2b6b4ac49e6f28f';
+      
+      addrText.textContent = address;
+      badge.textContent = net;
+      details.classList.remove('hidden');
+    });
+  }
+}
+
+$('#copyAddrBtn').addEventListener('click', () => {
+  const addr = $('#addressText').textContent;
+  if (!addr || addr === '-') return toast('Select network first', 'err');
+  navigator.clipboard.writeText(addr).then(() => toast('✅ Address Copied'));
+});
 
 function renderBanks() {
   const list = $('#banksList');
@@ -132,7 +161,7 @@ function renderBanks() {
 
 function renderBankSelect() {
   const sel = $('#bankSelect');
-  if (!state.banks.length) { sel.innerHTML = '<option value="">No banks</option>'; sel.disabled = true; }
+  if (!state.banks.length) { sel.innerHTML = '<option value="">No banks added. Add one first!</option>'; sel.disabled = true; }
   else { sel.disabled = false; sel.innerHTML = state.banks.map(b => `<option value="${b.id}">${escape(b.bank)} - A/C ${escape(b.number)}</option>`).join(''); }
 }
 
