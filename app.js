@@ -70,8 +70,23 @@ function drawChart() {
 }
 
 function renderSlots() {
-  const grid = $('#slotGrid'); grid.innerHTML = state.slots.map(s => `<div class="slot ${state.selectedSlot === s ? 'selected' : ''}" data-slot="${s}">$${s}</div>`).join('');
-  grid.querySelectorAll('.slot').forEach(el => el.addEventListener('click', () => { state.selectedSlot = Number(el.dataset.slot); renderSlots(); }));
+  const grid = $('#slotGrid');
+  grid.innerHTML = state.slots.map(s => {
+    // Formula: 500 ke liye 125, 600 ke liye 127... (Har 100 par +2)
+    const rate = 125 + ((s - 500) / 100) * 2;
+    return `
+      <div class="slot ${state.selectedSlot === s ? 'selected' : ''}" data-slot="${s}" style="flex-direction:column; padding:12px 6px; line-height:1.2;">
+        <span style="font-size:16px; font-weight:700;">$${s}</span>
+        <span style="font-size:11px; opacity:0.8; margin-top:4px;">@ ₹${rate}/USDT</span>
+      </div>
+    `;
+  }).join('');
+  
+  grid.querySelectorAll('.slot').forEach(el => el.addEventListener('click', () => {
+    state.selectedSlot = Number(el.dataset.slot);
+    renderSlots();
+  }));
+}
 }
 
 function renderPaymentAddress() {
