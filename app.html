@@ -2,130 +2,196 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>BullPay — Future of Payments</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <meta name="theme-color" content="#090D18" />
+  <title>BullPay — Wallet</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
 
-  <!-- Animated Neon Background -->
-  <div class="bg-orbs">
-    <span class="orb orb-1"></span>
-    <span class="orb orb-2"></span>
-    <span class="orb orb-3"></span>
+  <!-- Background -->
+  <div class="bg-orbs"></div>
+  <div class="grid-bg"></div>
+
+  <!-- Toast Container -->
+  <div class="toast-wrap" id="toastWrap"></div>
+
+  <!-- ============ LOADING SCREEN ============ -->
+  <div id="loadingScreen" class="loading-screen">
+    <div class="spinner"></div>
   </div>
-  <div class="grid-overlay"></div>
 
-  <!-- Navbar -->
-  <nav class="navbar glass">
-    <div class="logo">
-      <span class="logo-icon">⚡</span>
-      <span class="logo-text">Bull<span class="accent">Pay</span></span>
-    </div>
-    <ul class="nav-links">
-      <li><a href="#features">Features</a></li>
-      <li><a href="#balance">Wallet</a></li>
-      <li><a href="#stats">Stats</a></li>
-    </ul>
-    <div class="nav-actions">
-      <a href="login.html" class="btn btn-ghost">Login</a>
-      <a href="login.html" class="btn btn-primary">Get Started</a>
-    </div>
-    <div class="hamburger" id="hamburger">☰</div>
-  </nav>
+  <!-- ============ LOGIN SCREEN ============ -->
+  <div id="loginScreen" class="auth-screen hidden fade-in">
+    <div class="auth-card glass">
+      <div class="brand center-text" style="justify-content:center; margin-bottom:20px;">
+        <span class="brand-icon">⚡</span>
+        <span>Bull<span class="brand-accent">Pay</span></span>
+      </div>
+      <h1>Welcome <span class="text-neon">back</span></h1>
+      <p class="sub">Login to your wallet</p>
 
-  <!-- Hero -->
-  <section class="hero">
-    <div class="hero-content">
-      <span class="badge glass">🔥 New • Instant UPI Payments</span>
-      <h1 class="hero-title">
-        Payments that feel <span class="gradient-text">futuristic</span>
-      </h1>
-      <p class="hero-sub">
-        BullPay is a next-gen wallet — send, receive, and track money with
-        lightning speed. Built for the modern web.
+      <form id="loginForm">
+        <label class="field">
+          <span>User ID</span>
+          <input class="input" name="u" placeholder="your username" autocomplete="username" required />
+        </label>
+        <label class="field">
+          <span>Password</span>
+          <input class="input" name="p" type="password" placeholder="••••••••" autocomplete="current-password" required />
+        </label>
+        <button type="submit" class="btn btn-primary btn-lg btn-block mt-2">Login →</button>
+      </form>
+
+      <p class="center-text text-sm text-dim mt-4">
+        <a href="/admin" style="color:var(--neon); text-decoration:none;">Admin panel →</a>
       </p>
-      <div class="hero-cta">
-        <a href="login.html" class="btn btn-primary btn-lg glow">
-          Start Now →
-        </a>
-        <a href="#features" class="btn btn-ghost btn-lg">Learn More</a>
-      </div>
+    </div>
+  </div>
 
-      <!-- Animated Balance Card -->
-      <div class="balance-card glass" id="balanceCard">
-        <div class="card-top">
-          <span class="card-label">Total Balance</span>
-          <span class="live-dot"></span>
+  <!-- ============ MAIN APP ============ -->
+  <div id="mainApp" class="hidden fade-in">
+
+    <!-- Header -->
+    <header class="app-header">
+      <div class="container">
+        <div class="brand">
+          <span class="brand-icon">⚡</span>
+          <span>Bull<span class="brand-accent">Pay</span></span>
         </div>
-        <div class="card-amount">
-          <span class="currency">₹</span>
-          <span id="balanceValue" class="counter">0</span>
+        <button id="logoutBtn" class="btn btn-ghost btn-sm">Logout</button>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container" style="padding-top:20px; padding-bottom:60px;">
+
+      <!-- Balance Card -->
+      <div class="card balance-card">
+        <div class="balance-label">
+          Wallet Overview <span class="live-dot"></span>
         </div>
-        <div class="card-bottom">
+        <div class="balance-amount">
+          <span class="cur">₹</span><span id="totalDeposits">0</span>
+        </div>
+        <div class="balance-meta">
           <div>
-            <small>Wallet ID</small>
-            <p>BP••••8821</p>
+            <small>Orders</small>
+            <p id="orderCount">0</p>
           </div>
           <div>
-            <small>Status</small>
-            <p class="status-active">Active</p>
+            <small>Approved</small>
+            <p id="approvedCount" style="color:var(--neon);">0</p>
+          </div>
+          <div>
+            <small>Pending</small>
+            <p id="pendingCount" style="color:var(--warn);">0</p>
           </div>
         </div>
       </div>
-    </div>
-  </section>
 
-  <!-- Features -->
-  <section id="features" class="features">
-    <h2 class="section-title">Why <span class="gradient-text">BullPay</span>?</h2>
-    <div class="feature-grid">
-      <div class="feature-card glass">
-        <div class="feature-icon">⚡</div>
-        <h3>Instant Transfers</h3>
-        <p>Send money in under 2 seconds with UPI integration.</p>
+      <!-- Tabs -->
+      <div class="tabs" style="margin-top:20px;">
+        <button class="tab active" data-tab="deposit">💳 Deposit</button>
+        <button class="tab" data-tab="banks">🏦 Banks</button>
+        <button class="tab" data-tab="orders">📋 Orders</button>
       </div>
-      <div class="feature-card glass">
-        <div class="feature-icon">🔒</div>
-        <h3>Bank-Level Security</h3>
-        <p>256-bit encryption, 2FA, and fraud detection built in.</p>
-      </div>
-      <div class="feature-card glass">
-        <div class="feature-icon">📊</div>
-        <h3>Smart Analytics</h3>
-        <p>Track spending with live charts and insights.</p>
-      </div>
-      <div class="feature-card glass">
-        <div class="feature-icon">🌐</div>
-        <h3>Works Everywhere</h3>
-        <p>Mobile, tablet, desktop — same smooth experience.</p>
-      </div>
-    </div>
-  </section>
 
-  <!-- Stats -->
-  <section id="stats" class="stats">
-    <div class="stat-card glass">
-      <h2 class="counter" data-target="120000">0</h2>
-      <p>Active Users</p>
-    </div>
-    <div class="stat-card glass">
-      <h2 class="counter" data-target="50000000">0</h2>
-      <p>Transactions</p>
-    </div>
-    <div class="stat-card glass">
-      <h2 class="counter" data-target="99">0</h2>
-      <p>% Uptime</p>
-    </div>
-  </section>
+      <!-- ---- TAB: DEPOSIT ---- -->
+      <section id="tab-deposit" class="tab-content">
+        <div class="card">
+          <div class="card-title">Step 1 — Choose Amount</div>
+          <div class="slot-grid" id="slotGrid"></div>
+        </div>
 
-  <!-- Footer -->
-  <footer class="footer glass">
-    <p>© 2025 BullPay. Built with ⚡ and Neon.</p>
-  </footer>
+        <div class="card mt-4">
+          <div class="card-title">Step 2 — Send Payment To</div>
+          <div id="payAddressBox" class="list-item">
+            <div class="info">
+              <strong id="payNetwork">TRC20</strong>
+              <small id="payAddress" style="word-break:break-all;">Loading...</small>
+            </div>
+            <button id="copyAddrBtn" class="btn btn-ghost btn-sm">Copy</button>
+          </div>
+        </div>
 
-  <script src="js/app.js"></script>
+        <div class="card mt-4">
+          <div class="card-title">Step 3 — Submit Details</div>
+          <form id="orderForm">
+            <label class="field">
+              <span>Select Bank Account</span>
+              <select class="input" name="bankId" id="bankSelect" required></select>
+            </label>
+            <label class="field">
+              <span>Transaction ID</span>
+              <input class="input" name="txid" placeholder="Enter UPI/Txn ID" required />
+            </label>
+            <button type="submit" class="btn btn-primary btn-lg btn-block mt-2">
+              Submit Order →
+            </button>
+          </form>
+        </div>
+      </section>
+
+      <!-- ---- TAB: BANKS ---- -->
+      <section id="tab-banks" class="tab-content hidden">
+        <div class="card">
+          <div class="card-title">
+            <span>Your Bank Accounts</span>
+            <button id="addBankBtn" class="btn btn-primary btn-sm">+ Add</button>
+          </div>
+          <div id="banksList">
+            <p class="text-dim center-text text-sm" style="padding:20px 0;">No banks added yet</p>
+          </div>
+        </div>
+
+        <!-- Add Bank Form -->
+        <div id="addBankForm" class="card mt-4 hidden">
+          <div class="card-title">Add New Bank</div>
+          <form id="newBankForm">
+            <label class="field">
+              <span>Account Type</span>
+              <select class="input" name="type" required>
+                <option value="Savings">Savings</option>
+                <option value="Current">Current</option>
+              </select>
+            </label>
+            <label class="field">
+              <span>Account Number</span>
+              <input class="input" name="number" placeholder="1234567890" required />
+            </label>
+            <label class="field">
+              <span>Bank Name</span>
+              <input class="input" name="bank" placeholder="SBI, HDFC..." required />
+            </label>
+            <label class="field">
+              <span>IFSC Code</span>
+              <input class="input" name="ifsc" placeholder="SBIN0001234" required style="text-transform:uppercase;" />
+            </label>
+            <div class="row">
+              <button type="submit" class="btn btn-primary">Save Bank</button>
+              <button type="button" id="cancelBankBtn" class="btn btn-ghost">Cancel</button>
+            </div>
+          </form>
+        </div>
+      </section>
+
+      <!-- ---- TAB: ORDERS ---- -->
+      <section id="tab-orders" class="tab-content hidden">
+        <div class="card">
+          <div class="card-title">Order History</div>
+          <div id="ordersList">
+            <p class="text-dim center-text text-sm" style="padding:20px 0;">No orders yet</p>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <script src="app.js"></script>
 </body>
 </html>
