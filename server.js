@@ -9,7 +9,8 @@ const DEF = { users: [], banks: [], orders: [], settings: { address: '', network
 let D = fs.existsSync(FILE) ? JSON.parse(fs.readFileSync(FILE, 'utf8')) : DEF;
 // Free hosting par data bachane ke liye Supabase (SUPABASE_URL + SUPABASE_KEY set karein)
 const SU = (process.env.SUPABASE_URL || '').replace(/\/$/, ''), SK = process.env.SUPABASE_KEY || '';
-const H = { apikey: SK, Authorization: 'Bearer ' + SK, 'content-type': 'application/json' };
+const H = { apikey: SK, 'content-type': 'application/json' };
+if (SK.startsWith('eyJ')) H.Authorization = 'Bearer ' + SK; // purani service_role key (JWT) ke liye; nayi sb_secret_ key me sirf apikey chalti hai
 let q = Promise.resolve();
 const save = () => {
   if (!SU) return fs.writeFileSync(FILE, JSON.stringify(D, null, 1));
