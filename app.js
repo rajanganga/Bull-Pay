@@ -13,51 +13,38 @@ const API = {
   addBank: (b) => API.req('bank/add', b),
   delBank: (id) => API.req('bank/del', { id }),
   createOrder: (o) => API.req('order', o),
+  setPin: (pin) => API.req('set-pin', { pin }),
+  readNotif: () => API.req('notif/read', {}),
 };
 
-const state = { slots: [], settings: {}, banks: [], orders: [], selectedSlot: null };
+const state = { slots: [], settings: {}, banks: [], orders: [], notifs: [], selectedSlot: null };
 const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => document.querySelectorAll(sel);
 
-function toast(msg, type = 'ok') {
-  const el = document.createElement('div'); el.className = 'toast ' + type; el.textContent = msg;
-  $('#toastWrap').appendChild(el); setTimeout(() => el.remove(), 3500);
-}
-function money(n) { return Number(n || 0).toLocaleString('en-US'); } // US Format for $
+function toast(msg, type = 'ok') { const el = document.createElement('div'); el.className = 'toast ' + type; el.textContent = msg; $('#toastWrap').appendChild(el); setTimeout(() => el.remove(), 3500); }
+function money(n) { return Number(n || 0).toLocaleString('en-US'); }
 function escape(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
 
 function showLogin() { $('#loadingScreen').classList.add('hidden'); $('#loginScreen').classList.remove('hidden'); $('#mainApp').classList.add('hidden'); }
 function showMain() { $('#loadingScreen').classList.add('hidden'); $('#loginScreen').classList.add('hidden'); $('#mainApp').classList.remove('hidden'); }
 
 $('#loginForm').addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const btn = e.target.querySelector('button[type="submit"]');
+  e.preventDefault(); const btn = e.target.querySelector('button[type="submit"]');
   btn.disabled = true; btn.textContent = 'Authenticating...';
-  try {
-    const { t } = await API.login(e.target.u.value.trim(), e.target.p.value);
-    API.token = t; localStorage.setItem('bp_token', t);
-    toast('✅ Login successful'); await loadData();
-  } catch (err) {
-    toast('❌ ' + err.message, 'err'); btn.disabled = false; btn.textContent = 'Login →';
-  }
+  try { const { t } = await API.login(e.target.u.value.trim(), e.target.p.value); API.token = t; localStorage.setItem('bp_token', t); toast('✅ Login successful'); await loadData(); } catch (err) { toast('❌ ' + err.message, 'err'); btn.disabled = false; btn.textContent = 'Login →'; }
 });
 
 async function loadData() {
   try {
     const d = await API.me();
     state.slots = d.slots || []; state.settings = d.settings || {};
-    state.banks = d.banks || []; state.orders = d.orders || [];
+    state.banks = d.banks || []; state.orders = d.orders || []; state.notifs = d.notifications || [];
     if (state.selectedSlot === null && state.slots.length) state.selectedSlot = state.slots[0];
     showMain(); renderAll();
-  } catch (err) {
-    API.token = ''; localStorage.removeItem('bp_token'); showLogin();
-    if (err.message !== 'Login karein') toast('❌ ' + err.message, 'err');
-  }
+  } catch (err) { API.token = ''; localStorage.removeItem('bp_token'); showLogin(); if (err.message !== 'Login karein') toast('❌ ' + err.message, 'err'); }
 }
 
-function renderAll() {
-  renderBalance(); renderSlots(); renderPaymentAddress(); renderBanks(); renderBankSelect(); renderOrders(); drawChart();
-}
+function renderAll() { renderBalance(); renderSlots(); renderPaymentAddress(); renderBanks(); renderBankSelect(); renderOrders(); drawChart(); renderNotifs(); }
 
 function renderBalance() {
   const total = state.orders.filter(o => o.status === 'approved').reduce((s, o) => s + Number(o.slot || 0), 0);
@@ -67,43 +54,23 @@ function renderBalance() {
   $('#pendingCount').textContent = state.orders.filter(o => o.status === 'pending').length;
 }
 
-// Custom Mini Graph logic using Canvas
 function drawChart() {
-  const canvas = $('#walletChart');
-  if (!canvas) return;
-  const ctx = canvas.getContext('2d');
-  const w = canvas.width = canvas.offsetWidth;
-  const h = canvas.height = 120;
+  const canvas = $('#walletChart'); if (!canvas) return;
+  const ctx = canvas.getContext('2d'); const w = canvas.width = canvas.offsetWidth; const h = canvas.height = 120;
   ctx.clearRect(0, 0, w, h);
-
   const data = state.orders.slice(0, 7).reverse();
-  if (data.length < 2) {
-    ctx.fillStyle = 'rgba(181,255,74,0.5)'; ctx.font = '14px Inter'; ctx.textAlign = 'center';
-    ctx.fillText('Not enough data for graph', w/2, h/2);
-    return;
-  }
-
-  const max = Math.max(...data.map(o => o.slot), 100);
-  const stepX = w / (data.length - 1);
-  
-  ctx.beginPath();
-  ctx.moveTo(0, h - (data[0].slot / max) * (h - 20));
-  for (let i = 1; i < data.length; i++) {
-    ctx.lineTo(i * stepX, h - (data[i].slot / max) * (h - 20));
-  }
+  if (data.length < 2) { ctx.fillStyle = 'rgba(181,255,74,0.5)'; ctx.font = '14px Inter'; ctx.textAlign = 'center'; ctx.fillText('Not enough data', w/2, h/2); return; }
+  const max = Math.max(...data.map(o => o.slot), 100); const stepX = w / (data.length - 1);
+  ctx.beginPath(); ctx.moveTo(0, h - (data[0].slot / max) * (h - 20));
+  for (let i = 1; i < data.length; i++) ctx.lineTo(i * stepX, h - (data[i].slot / max) * (h - 20));
   ctx.strokeStyle = '#B5FF4A'; ctx.lineWidth = 2; ctx.stroke();
-
-  // Fill under line
   ctx.lineTo(w, h); ctx.lineTo(0, h); ctx.closePath();
-  const grad = ctx.createLinearGradient(0, 0, 0, h);
-  grad.addColorStop(0, 'rgba(181, 255, 74, 0.2)');
-  grad.addColorStop(1, 'rgba(181, 255, 74, 0)');
+  const grad = ctx.createLinearGradient(0, 0, 0, h); grad.addColorStop(0, 'rgba(181, 255, 74, 0.2)'); grad.addColorStop(1, 'rgba(181, 255, 74, 0)');
   ctx.fillStyle = grad; ctx.fill();
 }
 
 function renderSlots() {
-  const grid = $('#slotGrid');
-  grid.innerHTML = state.slots.map(s => `<div class="slot ${state.selectedSlot === s ? 'selected' : ''}" data-slot="${s}">$${s}</div>`).join('');
+  const grid = $('#slotGrid'); grid.innerHTML = state.slots.map(s => `<div class="slot ${state.selectedSlot === s ? 'selected' : ''}" data-slot="${s}">$${s}</div>`).join('');
   grid.querySelectorAll('.slot').forEach(el => el.addEventListener('click', () => { state.selectedSlot = Number(el.dataset.slot); renderSlots(); }));
 }
 
@@ -112,9 +79,8 @@ function renderPaymentAddress() {
   $('#payAddress').textContent = state.settings.address || 'Address not set by admin';
 }
 $('#copyAddrBtn').addEventListener('click', () => {
-  const addr = state.settings.address || '';
-  if (!addr) return toast('Address not set', 'err');
-  navigator.clipboard.writeText(addr).then(() => toast('✅ Address copied'));
+  const addr = state.settings.address || ''; if (!addr) return toast('Address not set', 'err');
+  navigator.clipboard.writeText(addr).then(() => toast('✅ Copied'));
 });
 
 function renderBanks() {
@@ -123,92 +89,98 @@ function renderBanks() {
   list.innerHTML = state.banks.map(b => `
     <div class="list-item">
       <div class="info"><strong>${escape(b.bank)} • ${escape(b.type)}</strong><small>A/C ${escape(b.number)} • IFSC ${escape(b.ifsc)}</small></div>
-      <button class="btn btn-danger btn-sm" data-del-bank="${b.id}">Delete</button>
+      <div class="row">
+        <button class="btn btn-ghost btn-sm" data-copy="${b.number}">Copy A/C</button>
+        <button class="btn btn-danger btn-sm" data-del-bank="${b.id}">Delete</button>
+      </div>
     </div>
   `).join('');
+  list.querySelectorAll('[data-copy]').forEach(btn => btn.addEventListener('click', () => { navigator.clipboard.writeText(btn.dataset.copy); toast('✅ A/C Copied'); }));
   list.querySelectorAll('[data-del-bank]').forEach(btn => btn.addEventListener('click', async () => {
-    if (!confirm('Delete this bank?')) return;
-    try { await API.delBank(btn.dataset.delBank); toast('✅ Bank deleted'); await loadData(); } catch (e) { toast('❌ ' + e.message, 'err'); }
+    if (!confirm('Delete?')) return;
+    try { await API.delBank(btn.dataset.delBank); toast('✅ Deleted'); await loadData(); } catch (e) { toast('❌ ' + e.message, 'err'); }
   }));
 }
 
 function renderBankSelect() {
   const sel = $('#bankSelect');
-  if (!state.banks.length) { sel.innerHTML = '<option value="">No banks — add one first</option>'; sel.disabled = true; }
-  else {
-    sel.disabled = false;
-    sel.innerHTML = state.banks.map(b => `<option value="${b.id}">${escape(b.bank)} — A/C ${escape(b.number)}</option>`).join('');
-  }
+  if (!state.banks.length) { sel.innerHTML = '<option value="">No banks</option>'; sel.disabled = true; }
+  else { sel.disabled = false; sel.innerHTML = state.banks.map(b => `<option value="${b.id}">${escape(b.bank)} - A/C ${escape(b.number)}</option>`).join(''); }
 }
 
 function renderOrders() {
   const list = $('#ordersList');
   if (!state.orders.length) { list.innerHTML = '<p class="text-dim center-text text-sm" style="padding:20px 0;">No orders yet</p>'; return; }
   list.innerHTML = state.orders.map(o => `
-    <div class="list-item">
-      <div class="info">
-        <strong>$${money(o.slot)} — ${escape(o.status)}</strong>
-        <small>TXN: ${escape(o.txid)} • ${new Date(o.ts).toLocaleString()}</small>
+    <div class="list-item" style="flex-direction:column; align-items:flex-start;">
+      <div style="display:flex; justify-content:space-between; width:100%;">
+        <div class="info"><strong>$${money(o.slot)} — ${escape(o.status)}</strong><small>TXN: ${escape(o.txid)}</small></div>
+        <span class="badge badge-${o.status}">${o.status}</span>
       </div>
-      <span class="badge badge-${o.status}">${o.status}</span>
+      ${o.receipt ? `<img src="${o.receipt}" style="max-height:60px; border-radius:4px; margin-top:8px;" />` : ''}
     </div>
   `).join('');
 }
 
+function renderNotifs() {
+  const unread = state.notifs.filter(n => !n.read).length;
+  const badge = $('#notifBadge');
+  if (unread > 0) { badge.classList.remove('hidden'); badge.textContent = unread > 9 ? '9+' : unread; }
+  else badge.classList.add('hidden');
+
+  $('#notifList').innerHTML = state.notifs.length ? state.notifs.map(n => `
+    <div style="padding:10px 0; border-bottom:1px solid var(--border-soft); opacity:${n.read ? '0.6' : '1'};">
+      <strong style="font-size:13px; display:block; color:var(--neon);">${escape(n.title)}</strong>
+      <span style="font-size:12px; color:var(--text-dim);">${escape(n.msg)}</span>
+    </div>
+  `).join('') : '<p class="text-dim text-sm text-center" style="padding:10px;">No notifications</p>';
+}
+
+$('#notifBtn').onclick = () => {
+  $('#notifPanel').classList.toggle('hidden');
+  if (!state.notifs.every(n => n.read)) { API.readNotif(); setTimeout(() => loadData(), 500); }
+};
+
 $$('.tab').forEach(tab => tab.addEventListener('click', () => {
-  $$('.tab').forEach(t => t.classList.remove('active'));
-  tab.classList.add('active');
-  $$('.tab-content').forEach(c => c.classList.add('hidden'));
-  $('#tab-' + tab.dataset.tab).classList.remove('hidden');
+  $$('.tab').forEach(t => t.classList.remove('active')); tab.classList.add('active');
+  $$('.tab-content').forEach(c => c.classList.add('hidden')); $('#tab-' + tab.dataset.tab).classList.remove('hidden');
 }));
 
-// Order Form with Image Upload logic
 $('#orderForm').addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const form = e.target;
-  const btn = form.querySelector('button[type="submit"]');
-  if (state.selectedSlot === null) return toast('Select an amount first', 'err');
-  if (!form.bankId.value) return toast('Add a bank first', 'err');
-  
-  const file = form.receipt.files[0];
-  if (!file) return toast('Please upload a payment screenshot', 'err');
+  e.preventDefault(); const form = e.target; const btn = form.querySelector('button[type="submit"]');
+  if (state.selectedSlot === null) return toast('Select amount', 'err');
+  if (!form.bankId.value) return toast('Add bank first', 'err');
+  const file = form.receipt.files[0]; if (!file) return toast('Upload screenshot', 'err');
   if (file.size > 2.5 * 1024 * 1024) return toast('Image too large (Max 2MB)', 'err');
-
   btn.disabled = true; btn.textContent = 'Uploading...';
-
   const reader = new FileReader();
   reader.onload = async (event) => {
     try {
-      await API.createOrder({
-        bankId: form.bankId.value,
-        slot: state.selectedSlot,
-        txid: form.txid.value.trim(),
-        receipt: event.target.result // base64 string
-      });
-      toast('✅ Order submitted — awaiting approval');
-      form.reset(); await loadData();
-    } catch (err) {
-      toast('❌ ' + err.message, 'err');
-    }
+      await API.createOrder({ bankId: form.bankId.value, slot: state.selectedSlot, txid: form.txid.value.trim(), pin: form.pin.value, receipt: event.target.result });
+      toast('✅ Submitted'); form.reset(); await loadData();
+    } catch (err) { toast('❌ ' + err.message, 'err'); }
     btn.disabled = false; btn.textContent = 'Submit Order →';
   };
   reader.readAsDataURL(file);
 });
 
+$('#pinForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  try { await API.setPin(e.target.pin.value); toast('✅ PIN Saved'); e.target.reset(); } catch (err) { toast('❌ ' + err.message, 'err'); }
+});
+
 $('#addBankBtn').addEventListener('click', () => $('#addBankForm').classList.toggle('hidden'));
 $('#cancelBankBtn').addEventListener('click', () => $('#addBankForm').classList.add('hidden'));
 $('#newBankForm').addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const form = e.target;
-  const btn = form.querySelector('button[type="submit"]');
+  e.preventDefault(); const form = e.target; const btn = form.querySelector('button[type="submit"]');
   btn.disabled = true; btn.textContent = 'Saving...';
-  try {
-    await API.addBank({ type: form.type.value, number: form.number.value.trim(), bank: form.bank.value.trim(), ifsc: form.ifsc.value.trim().toUpperCase() });
-    toast('✅ Bank added'); form.reset(); $('#addBankForm').classList.add('hidden'); await loadData();
-  } catch (err) { toast('❌ ' + err.message, 'err'); }
+  try { await API.addBank({ type: form.type.value, number: form.number.value.trim(), bank: form.bank.value.trim(), ifsc: form.ifsc.value.trim().toUpperCase() }); toast('✅ Bank added'); form.reset(); $('#addBankForm').classList.add('hidden'); await loadData(); } catch (err) { toast('❌ ' + err.message, 'err'); }
   btn.disabled = false; btn.textContent = 'Save Bank';
 });
 
 $('#logoutBtn').addEventListener('click', () => { localStorage.removeItem('bp_token'); API.token = ''; location.reload(); });
+
+// Register Service Worker for PWA
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js');
 
 (function boot() { if (API.token) loadData(); else showLogin(); })();
