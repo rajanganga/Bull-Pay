@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
   <meta name="theme-color" content="#090D18" />
   <title>BullPay — Wallet</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="manifest" href="/manifest.json">
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css" />
 </head>
@@ -14,38 +14,39 @@
   <div class="grid-bg"></div>
   <div class="toast-wrap" id="toastWrap"></div>
 
-  <!-- Loading Screen -->
   <div id="loadingScreen" class="loading-screen"><div class="spinner"></div></div>
 
-  <!-- Login Screen -->
   <div id="loginScreen" class="auth-screen hidden fade-in">
     <div class="auth-card glass">
-      <div class="brand center-text" style="justify-content:center; margin-bottom:20px;">
-        <span class="brand-icon">⚡</span>
-        <span>Bull<span class="brand-accent">Pay</span></span>
-      </div>
+      <div class="brand center-text" style="justify-content:center; margin-bottom:20px;"><span class="brand-icon">⚡</span><span>Bull<span class="brand-accent">Pay</span></span></div>
       <h1>Welcome <span class="text-neon">back</span></h1>
-      <p class="sub">Login to your wallet</p>
       <form id="loginForm">
         <label class="field"><span>User ID</span><input class="input" name="u" placeholder="your username" required /></label>
-        <label class="field"><span>Password</span><input class="input" name="p" type="password" placeholder="••••••••" required /></label>
+        <label class="field"><span>Password</span><input class="input" name="p" type="password" required /></label>
         <button type="submit" class="btn btn-primary btn-lg btn-block mt-2">Login →</button>
       </form>
       <p class="center-text text-sm text-dim mt-4"><a href="/admin" style="color:var(--neon); text-decoration:none;">Admin panel →</a></p>
     </div>
   </div>
 
-  <!-- Main App -->
   <div id="mainApp" class="hidden fade-in">
     <header class="app-header">
       <div class="container">
         <div class="brand"><span class="brand-icon">⚡</span><span>Bull<span class="brand-accent">Pay</span></span></div>
-        <button id="logoutBtn" class="btn btn-ghost btn-sm">Logout</button>
+        <div class="row">
+          <button id="notifBtn" class="btn btn-ghost btn-sm" style="position:relative;">🔔<span id="notifBadge" class="hidden" style="position:absolute; top:-4px; right:-4px; background:var(--danger); color:white; border-radius:50%; width:16px; height:16px; font-size:10px; display:grid; place-items:center;">!</span></button>
+          <button id="logoutBtn" class="btn btn-ghost btn-sm">Logout</button>
+        </div>
       </div>
     </header>
 
     <main class="container" style="padding-top:20px; padding-bottom:60px;">
-      <!-- Balance Card with Graph -->
+      <!-- Notifications Dropdown -->
+      <div id="notifPanel" class="card glass hidden" style="position:absolute; right:20px; top:70px; z-index:100; width:300px; max-height:400px; overflow-y:auto; box-shadow:0 10px 40px rgba(0,0,0,0.8);">
+        <div class="card-title">Notifications</div>
+        <div id="notifList"></div>
+      </div>
+
       <div class="card balance-card">
         <div class="balance-label">Wallet Overview <span class="live-dot"></span></div>
         <div class="balance-amount"><span class="cur">$</span><span id="totalDeposits">0</span></div>
@@ -54,18 +55,15 @@
           <div><small>Approved</small><p id="approvedCount" style="color:var(--neon);">0</p></div>
           <div><small>Pending</small><p id="pendingCount" style="color:var(--warn);">0</p></div>
         </div>
-        <!-- Graph Canvas -->
         <canvas id="walletChart" width="400" height="100" style="width:100%; height:120px; margin-top:15px; border-radius:8px;"></canvas>
       </div>
 
-      <!-- Tabs -->
       <div class="tabs" style="margin-top:20px;">
         <button class="tab active" data-tab="deposit">💳 Deposit</button>
-        <button class="tab" data-tab="banks">🏦 Banks</button>
+        <button class="tab" data-tab="banks">🏦 Banks & PIN</button>
         <button class="tab" data-tab="orders">📋 Orders</button>
       </div>
 
-      <!-- TAB: DEPOSIT -->
       <section id="tab-deposit" class="tab-content">
         <div class="card">
           <div class="card-title">Step 1 — Choose Amount</div>
@@ -82,39 +80,42 @@
           <div class="card-title">Step 3 — Submit Details</div>
           <form id="orderForm">
             <label class="field"><span>Select Bank Account</span><select class="input" name="bankId" id="bankSelect" required></select></label>
-            <label class="field"><span>Transaction ID</span><input class="input" name="txid" placeholder="Enter UPI/Txn ID" required /></label>
-            <label class="field">
-              <span>Payment Screenshot / Receipt</span>
-              <input class="input" type="file" name="receipt" accept="image/*" required style="padding:8px;" />
-            </label>
+            <label class="field"><span>Transaction ID</span><input class="input" name="txid" placeholder="Enter TXID" required /></label>
+            <label class="field"><span>Security PIN</span><input class="input" name="pin" type="password" placeholder="****" maxlength="4" required /></label>
+            <label class="field"><span>Payment Screenshot</span><input class="input" type="file" name="receipt" accept="image/*" required style="padding:8px;" /></label>
             <button type="submit" class="btn btn-primary btn-lg btn-block mt-2">Submit Order →</button>
           </form>
         </div>
       </section>
 
-      <!-- TAB: BANKS -->
       <section id="tab-banks" class="tab-content hidden">
         <div class="card">
+          <div class="card-title">🔒 Security PIN</div>
+          <form id="pinForm" class="row">
+            <input class="input" name="pin" type="password" placeholder="Set 4-digit PIN" maxlength="4" style="flex:1;" required />
+            <button type="submit" class="btn btn-primary">Save PIN</button>
+          </form>
+        </div>
+        <div class="card mt-4">
           <div class="card-title"><span>Your Bank Accounts</span><button id="addBankBtn" class="btn btn-primary btn-sm">+ Add</button></div>
-          <div id="banksList"><p class="text-dim center-text text-sm" style="padding:20px 0;">No banks added yet</p></div>
+          <div id="banksList"></div>
         </div>
         <div id="addBankForm" class="card mt-4 hidden">
           <div class="card-title">Add New Bank</div>
           <form id="newBankForm">
             <label class="field"><span>Account Type</span><select class="input" name="type" required><option value="Savings">Savings</option><option value="Current">Current</option></select></label>
-            <label class="field"><span>Account Number</span><input class="input" name="number" placeholder="1234567890" required /></label>
-            <label class="field"><span>Bank Name</span><input class="input" name="bank" placeholder="SBI, HDFC..." required /></label>
-            <label class="field"><span>IFSC Code</span><input class="input" name="ifsc" placeholder="SBIN0001234" required style="text-transform:uppercase;" /></label>
-            <div class="row"><button type="submit" class="btn btn-primary">Save Bank</button><button type="button" id="cancelBankBtn" class="btn btn-ghost">Cancel</button></div>
+            <label class="field"><span>Account Number</span><input class="input" name="number" required /></label>
+            <label class="field"><span>Bank Name</span><input class="input" name="bank" required /></label>
+            <label class="field"><span>IFSC Code</span><input class="input" name="ifsc" required style="text-transform:uppercase;" /></label>
+            <div class="row"><button type="submit" class="btn btn-primary">Save</button><button type="button" id="cancelBankBtn" class="btn btn-ghost">Cancel</button></div>
           </form>
         </div>
       </section>
 
-      <!-- TAB: ORDERS -->
       <section id="tab-orders" class="tab-content hidden">
         <div class="card">
           <div class="card-title">Order History</div>
-          <div id="ordersList"><p class="text-dim center-text text-sm" style="padding:20px 0;">No orders yet</p></div>
+          <div id="ordersList"></div>
         </div>
       </section>
     </main>
