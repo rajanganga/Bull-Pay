@@ -36,7 +36,8 @@ function send(res, code, obj) {
 }
 function page(res, f) {
   res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
-  res.end(fs.readFileSync(path.join(__dirname, 'public', f)));
+  const p = [path.join(__dirname, 'public', f), path.join(__dirname, f)].find(x => fs.existsSync(x)); // public/ ya same folder dono chalenge
+  res.end(fs.readFileSync(p));
 }
 function throttle(ip) { // 10 galat login ke baad 5 min block
   const f = fails[ip];
