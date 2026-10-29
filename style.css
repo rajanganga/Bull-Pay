@@ -231,3 +231,36 @@ label.field > span { display: block; font-size: 12px; color: var(--neon); text-t
   .btn-lg { padding: 14px 20px; font-size: 13px; }
   .slot-grid { grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); }
 }
+/* =========================================
+   Bull Cursor Trail & Click Animations
+   ========================================= */
+.bull-trail {
+  position: absolute;
+  font-size: 24px;
+  pointer-events: none; /* Taaki click karne mein disturb na ho */
+  z-index: 9999;
+  user-select: none;
+  filter: drop-shadow(0 0 5px var(--neon));
+  animation: trailFade 1s linear forwards;
+}
+
+@keyframes trailFade {
+  0% { opacity: 0.8; transform: scale(1); }
+  100% { opacity: 0; transform: scale(0.5) translateY(20px); }
+}
+
+.bull-click {
+  position: absolute;
+  font-size: 60px;
+  pointer-events: none;
+  z-index: 9999;
+  user-select: none;
+  filter: drop-shadow(0 0 15px var(--neon)); /* Neon glow click par */
+  animation: clickPop 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+@keyframes clickPop {
+  0% { opacity: 1; transform: scale(0.2); }
+  50% { opacity: 1; transform: scale(1.2); }
+  100% { opacity: 0; transform: scale(1.5); }
+}
