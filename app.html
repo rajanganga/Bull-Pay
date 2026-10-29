@@ -163,5 +163,67 @@
   </div>
 
   <script src="app.js"></script>
+    <!-- BULL CURSOR TRAIL SCRIPT -->
+  <script>
+    // Sirf desktop/laptop par chalane ke liye check (Mobile par touch se hoga)
+    if (!('ontouchstart' in window)) {
+      let lastX = 0, lastY = 0;
+      let trailDistance = 0;
+      
+      // Jab mouse move ho
+      document.addEventListener('mousemove', (e) => {
+        // Distance calculate karein taaki har pixel par bull na aaye
+        const dist = Math.hypot(e.pageX - lastX, e.pageY - lastY);
+        
+        if (dist > 60) { // Har 60px move par ek bull banega
+          lastX = e.pageX;
+          lastY = e.pageY;
+          createTrail(e.pageX, e.pageY);
+        }
+      });
+
+      function createTrail(x, y) {
+        const bull = document.createElement('div');
+        bull.className = 'bull-trail';
+        bull.innerText = '🐂';
+        
+        // Position set karein
+        bull.style.left = (x - 15) + 'px';
+        bull.style.top = (y - 15) + 'px';
+        
+        // Random rotation dein thoda natural lagne ke liye
+        const rotation = Math.random() * 40 - 20; 
+        bull.style.transform = `rotate(${rotation}deg)`;
+        
+        document.body.appendChild(bull);
+
+        // 1 second baad bull ko delete kar dein
+        setTimeout(() => {
+          bull.remove();
+        }, 1000);
+      }
+    }
+
+    // Jab screen par click ho
+    document.addEventListener('mousedown', (e) => {
+      createClickBull(e.pageX, e.pageY);
+    });
+
+    function createClickBull(x, y) {
+      const bull = document.createElement('div');
+      bull.className = 'bull-click';
+      bull.innerText = '🐂';
+      
+      bull.style.left = (x - 30) + 'px'; // Center align
+      bull.style.top = (y - 30) + 'px';
+      
+      document.body.appendChild(bull);
+
+      // Animation ke baad delete kar dein
+      setTimeout(() => {
+        bull.remove();
+      }, 800);
+    }
+  </script>
 </body>
 </html>
