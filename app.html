@@ -3,44 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
-  <meta name="theme-color" content="#090D18" />
+  <meta name="theme-color" content="#05070A" />
   <title>BullPay — Wallet</title>
   <link rel="manifest" href="/manifest.json">
-    <!-- Purana Font Link Hata Kar Ye Lagayein -->
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css" />
-  <style>
-    .rate-card { background: linear-gradient(135deg, rgba(181,255,74,0.15) 0%, rgba(9,13,24,0.8) 100%); border: 1px solid var(--neon); border-radius: 16px; padding: 16px 20px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 0 20px rgba(181, 255, 74, 0.15); animation: pulse-border 2s infinite alternate; }
-    @keyframes pulse-border { from { box-shadow: 0 0 10px rgba(181, 255, 74, 0.1); } to { box-shadow: 0 0 25px rgba(181, 255, 74, 0.4); } }
-    .rate-card small { font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; }
-    .rate-card p { font-size: 22px; font-weight: 800; margin-top: 4px; }
-    .rate-card .amount { color: #fff; }
-    .rate-card .price { color: var(--neon); text-shadow: 0 0 10px rgba(181,255,74,0.5); text-align: right; }
-    .slot-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(85px, 1fr)); gap: 10px; }
-    .slot { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 12px 5px; border-radius: 12px; }
-    .slot .slot-amt { font-size: 16px; font-weight: 700; }
-    .slot .slot-rate { font-size: 11px; font-weight: 600; margin-top: 4px; padding: 2px 6px; border-radius: 4px; background: rgba(255,255,255,0.1); }
-    .slot.selected .slot-rate { background: rgba(9,13,24,0.2); }
-    .bank-select-wrapper { position: relative; }
-    .bank-dropdown { position: absolute; top: 100%; left: 0; right: 0; background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; max-height: 250px; overflow-y: auto; z-index: 50; margin-top: 5px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); display: none; }
-    .bank-dropdown.active { display: block; }
-    .bank-option { padding: 10px 14px; display: flex; align-items: center; gap: 10px; cursor: pointer; transition: background 0.2s; border-bottom: 1px solid rgba(255,255,255,0.05); }
-    .bank-option:hover { background: var(--neon-dim); }
-    .bank-option img { width: 24px; height: 24px; object-fit: contain; background: #fff; border-radius: 4px; padding: 2px; }
-    .bank-option span { font-size: 14px; font-weight: 500; }
-    .help-btn { position: fixed !important; bottom: 25px !important; right: 25px !important; z-index: 99999 !important; width: 60px; height: 60px; border-radius: 50%; background: var(--neon); color: #090D18; display: flex; align-items: center; justify-content: center; font-size: 28px; box-shadow: 0 0 20px rgba(181, 255, 74, 0.6); cursor: pointer; transition: transform 0.3s ease, box-shadow 0.3s ease; border: none; outline: none; animation: helpPulse 2s infinite; }
-    .help-btn:hover { transform: scale(1.1) rotate(10deg); box-shadow: 0 0 30px rgba(181, 255, 74, 0.9); }
-    @keyframes helpPulse { 0% { box-shadow: 0 0 15px rgba(181, 255, 74, 0.5); } 50% { box-shadow: 0 0 30px rgba(181, 255, 74, 0.9); } 100% { box-shadow: 0 0 15px rgba(181, 255, 74, 0.5); } }
-    .help-menu { position: fixed !important; bottom: 100px !important; right: 25px !important; z-index: 99998 !important; background: var(--bg2); border: 1px solid var(--border); border-radius: 16px; padding: 12px; display: flex; flex-direction: column; gap: 8px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8), 0 0 20px rgba(181, 255, 74, 0.1); opacity: 0; transform: translateY(20px) scale(0.95); pointer-events: none; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
-    .help-menu.active { opacity: 1; transform: translateY(0) scale(1); pointer-events: auto; }
-    .help-menu a { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: 10px; text-decoration: none; color: var(--text); font-size: 14px; font-weight: 600; transition: background 0.2s; background: rgba(255, 255, 255, 0.03); border: 1px solid transparent; }
-    .help-menu a:hover { background: rgba(181, 255, 74, 0.1); border-color: rgba(181, 255, 74, 0.3); color: var(--neon); }
-    .help-menu a img { width: 22px; height: 22px; }
-  </style>
 </head>
 <body>
   <div class="bg-orbs"></div>
-  <div class="grid-bg"></div>
   <div class="toast-wrap" id="toastWrap"></div>
 
   <div id="loadingScreen" class="loading-screen"><div class="spinner"></div></div>
@@ -70,7 +40,7 @@
     </header>
 
     <main class="container" style="padding-top:20px; padding-bottom:60px;">
-      <div id="notifPanel" class="card glass hidden" style="position:absolute; right:20px; top:70px; z-index:100; width:300px; max-height:400px; overflow-y:auto; box-shadow:0 10px 40px rgba(0,0,0,0.8);">
+      <div id="notifPanel" class="card glass hidden" style="position:absolute; right:20px; top:70px; z-index:100; width:300px; max-height:400px; overflow-y:auto;">
         <div class="card-title">Notifications</div>
         <div id="notifList"></div>
       </div>
@@ -88,7 +58,7 @@
           <div><small>Approved</small><p id="approvedCount" style="color:var(--neon);">0</p></div>
           <div><small>Pending</small><p id="pendingCount" style="color:var(--warn);">0</p></div>
         </div>
-        <canvas id="walletChart" width="400" height="100" style="width:100%; height:120px; margin-top:15px; border-radius:8px;"></canvas>
+        <canvas id="walletChart" width="400" height="100" style="width:100%; height:120px; margin-top:15px;"></canvas>
       </div>
 
       <div class="tabs" style="margin-top:20px;">
@@ -102,17 +72,36 @@
           <div class="card-title">Step 1 — Choose Amount</div>
           <div class="slot-grid" id="slotGrid"></div>
         </div>
+        
         <div class="card mt-4">
           <div class="card-title">Step 2 — Send Payment To</div>
-          <div id="payAddressBox" class="list-item">
-            <div class="info"><strong id="payNetwork">TRC20</strong><small id="payAddress" style="word-break:break-all;">Loading...</small></div>
-            <button id="copyAddrBtn" class="btn btn-ghost btn-sm">Copy</button>
+          <label class="field">
+            <span>Select Network</span>
+            <select class="input" id="networkSelect">
+              <option value="">-- Select Network --</option>
+              <option value="TRC20">TRC 20 (Tron)</option>
+              <option value="BEP20">BEP 20 (BSC)</option>
+              <option value="ERC20">ERC 20 (Ethereum)</option>
+            </select>
+          </label>
+
+          <div id="paymentDetails" class="hidden" style="margin-top:16px; background:rgba(0,255,65,0.05); border:1px dashed var(--neon); padding:16px; border-radius:4px;">
+            <div class="row" style="justify-content:space-between; margin-bottom:8px;">
+              <div class="row">
+                <img src="https://cryptologos.cc/logos/tether-usdt-logo.svg?v=025" alt="USDT" style="width:28px; height:28px;" />
+                <strong style="color:var(--neon); font-family:'Orbitron'; font-size:16px;">USDT</strong>
+              </div>
+              <span class="badge badge-approved" id="networkBadge">TRC20</span>
+            </div>
+            <p style="word-break:break-all; font-size:14px; color:var(--text-dim); margin-bottom:12px;" id="addressText">-</p>
+            <button id="copyAddrBtn" class="btn btn-primary btn-block btn-sm">📋 Copy Address</button>
           </div>
         </div>
+
         <div class="card mt-4">
           <div class="card-title">Step 3 — Submit Details</div>
           <form id="orderForm">
-            <label class="field"><span>Select Bank Account</span><select class="input" name="bankId" id="bankSelect" required></select></label>
+            <label class="field"><span>Select Receiving Account</span><select class="input" name="bankId" id="bankSelect" required></select></label>
             <label class="field"><span>Transaction ID</span><input class="input" name="txid" placeholder="Enter TXID" required /></label>
             <label class="field"><span>Payment Screenshot</span><input class="input" type="file" name="receipt" accept="image/*" required style="padding:8px;" /></label>
             <button type="submit" class="btn btn-primary btn-lg btn-block mt-2">Submit Order →</button>
