@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#05070A" />
   <title>BullPay — Wallet</title>
   <link rel="manifest" href="/manifest.json">
-  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800;900&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -15,41 +15,46 @@
 
   <div id="loadingScreen" class="loading-screen"><div class="spinner"></div></div>
 
+  <!-- Login Screen -->
   <div id="loginScreen" class="auth-screen hidden fade-in">
     <div class="auth-card glass">
       <div class="brand center-text" style="justify-content:center; margin-bottom:20px;"><span class="brand-icon">⚡</span><span>Bull<span class="brand-accent">Pay</span></span></div>
       <h1>Welcome <span class="text-neon">back</span></h1>
       <form id="loginForm">
-        <label class="field"><span>User ID</span><input class="input" name="u" placeholder="your username" required /></label>
-        <label class="field"><span>Password</span><input class="input" name="p" type="password" required /></label>
+        <label class="field"><span>User ID</span><input class="input" name="u" placeholder="Enter Username" required /></label>
+        <label class="field"><span>Password</span><input class="input" name="p" type="password" placeholder="••••••••" required /></label>
         <button type="submit" class="btn btn-primary btn-lg btn-block mt-2">Login →</button>
       </form>
-      <p class="center-text text-sm text-dim mt-4"><a href="/admin" style="color:var(--neon); text-decoration:none;">Admin panel →</a></p>
+      <p class="center-text text-sm text-dim mt-4"><a href="/admin" style="color:var(--neon); text-decoration:none; font-family:'Orbitron';">Admin Access →</a></p>
     </div>
   </div>
 
+  <!-- Main App -->
   <div id="mainApp" class="hidden fade-in">
     <header class="app-header">
       <div class="container">
         <div class="brand"><span class="brand-icon">⚡</span><span>Bull<span class="brand-accent">Pay</span></span></div>
         <div class="row">
           <button id="notifBtn" class="btn btn-ghost btn-sm" style="position:relative;">🔔<span id="notifBadge" class="hidden" style="position:absolute; top:-4px; right:-4px; background:var(--danger); color:white; border-radius:50%; width:16px; height:16px; font-size:10px; display:grid; place-items:center;">!</span></button>
-          <button id="logoutBtn" class="btn btn-ghost btn-sm">Logout</button>
+          <button id="logoutBtn" class="btn btn-danger btn-sm">Logout</button>
         </div>
       </div>
     </header>
 
     <main class="container" style="padding-top:20px; padding-bottom:60px;">
+      
       <div id="notifPanel" class="card glass hidden" style="position:absolute; right:20px; top:70px; z-index:100; width:300px; max-height:400px; overflow-y:auto;">
         <div class="card-title">Notifications</div>
         <div id="notifList"></div>
       </div>
 
+      <!-- RATE HUD -->
       <div class="rate-card">
         <div><small>Selected Order</small><p class="amount" id="liveRateAmount">$0</p></div>
         <div><small>Live Rate</small><p class="price" id="liveRatePrice">₹0/USDT</p></div>
       </div>
 
+      <!-- BALANCE HUD -->
       <div class="card balance-card">
         <div class="balance-label">Wallet Overview <span class="live-dot"></span></div>
         <div class="balance-amount"><span class="cur">$</span><span id="totalDeposits">0</span></div>
@@ -61,12 +66,14 @@
         <canvas id="walletChart" width="400" height="100" style="width:100%; height:120px; margin-top:15px;"></canvas>
       </div>
 
-      <div class="tabs" style="margin-top:20px;">
+      <!-- GAME MENU TABS -->
+      <div class="tabs" style="margin-top:24px;">
         <button class="tab active" data-tab="deposit">💳 Deposit</button>
         <button class="tab" data-tab="banks">🏦 Banks</button>
         <button class="tab" data-tab="orders">📋 Orders</button>
       </div>
 
+      <!-- DEPOSIT SECTION -->
       <section id="tab-deposit" class="tab-content">
         <div class="card">
           <div class="card-title">Step 1 — Choose Amount</div>
@@ -85,15 +92,15 @@
             </select>
           </label>
 
-          <div id="paymentDetails" class="hidden" style="margin-top:16px; background:rgba(0,255,65,0.05); border:1px dashed var(--neon); padding:16px; border-radius:4px;">
-            <div class="row" style="justify-content:space-between; margin-bottom:8px;">
+          <div id="paymentDetails" class="hidden" style="margin-top:16px; background:rgba(0,255,65,0.05); border:1px dashed var(--neon); padding:16px; border-radius:2px;">
+            <div class="row" style="justify-content:space-between; margin-bottom:12px;">
               <div class="row">
                 <img src="https://cryptologos.cc/logos/tether-usdt-logo.svg?v=025" alt="USDT" style="width:28px; height:28px;" />
                 <strong style="color:var(--neon); font-family:'Orbitron'; font-size:16px;">USDT</strong>
               </div>
               <span class="badge badge-approved" id="networkBadge">TRC20</span>
             </div>
-            <p style="word-break:break-all; font-size:14px; color:var(--text-dim); margin-bottom:12px;" id="addressText">-</p>
+            <p style="word-break:break-all; font-size:14px; color:var(--text-dim); margin-bottom:12px; font-family:'Rajdhani';" id="addressText">-</p>
             <button id="copyAddrBtn" class="btn btn-primary btn-block btn-sm">📋 Copy Address</button>
           </div>
         </div>
@@ -103,12 +110,13 @@
           <form id="orderForm">
             <label class="field"><span>Select Receiving Account</span><select class="input" name="bankId" id="bankSelect" required></select></label>
             <label class="field"><span>Transaction ID</span><input class="input" name="txid" placeholder="Enter TXID" required /></label>
-            <label class="field"><span>Payment Screenshot</span><input class="input" type="file" name="receipt" accept="image/*" required style="padding:8px;" /></label>
+            <label class="field"><span>Payment Screenshot</span><input class="input" type="file" name="receipt" accept="image/*" required style="padding:10px;" /></label>
             <button type="submit" class="btn btn-primary btn-lg btn-block mt-2">Submit Order →</button>
           </form>
         </div>
       </section>
 
+      <!-- BANKS SECTION -->
       <section id="tab-banks" class="tab-content hidden">
         <div class="card">
           <div class="card-title"><span>Your Bank Accounts</span><button id="addBankBtn" class="btn btn-primary btn-sm">+ Add</button></div>
@@ -132,11 +140,12 @@
             </label>
             <label class="field"><span>Account Number</span><input class="input" name="number" placeholder="Account Number" required /></label>
             <label class="field"><span>IFSC Code</span><input class="input" name="ifsc" placeholder="IFSC Code" required style="text-transform:uppercase;" /></label>
-            <div class="row"><button type="submit" class="btn btn-primary">Save</button><button type="button" id="cancelBankBtn" class="btn btn-ghost">Cancel</button></div>
+            <div class="row"><button type="submit" class="btn btn-primary">Save Bank</button><button type="button" id="cancelBankBtn" class="btn btn-ghost">Cancel</button></div>
           </form>
         </div>
       </section>
 
+      <!-- ORDERS SECTION -->
       <section id="tab-orders" class="tab-content hidden">
         <div class="card">
           <div class="card-title">Order History</div>
@@ -148,7 +157,7 @@
 
   <button class="help-btn" id="helpBtn" aria-label="Help">💬</button>
   <div class="help-menu" id="helpMenu">
-    <div style="font-size:12px; font-weight:700; color:var(--text-dim); text-transform:uppercase; margin-bottom:4px; padding-left:5px;">24x7 Support</div>
+    <div style="font-size:12px; font-weight:700; color:var(--text-dim); text-transform:uppercase; margin-bottom:4px; padding-left:5px; font-family:'Orbitron';">24x7 Support</div>
     <a href="https://wa.me/919999999999" target="_blank"><img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="WA"> WhatsApp</a>
     <a href="https://t.me/YourTelegramUsername" target="_blank"><img src="https://upload.wikimedia.org/wikipedia/commons/8/82/Telegram_logo.svg" alt="TG"> Telegram</a>
   </div>
