@@ -2,225 +2,303 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
-  <meta name="theme-color" content="#090D18" />
-  <title>BullPay — Wallet</title>
-  <link rel="manifest" href="/manifest.json">
-  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BullPay — Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css" />
-  <style>
-    /* Rate Card Styles */
-    .rate-card {
-      background: linear-gradient(135deg, rgba(181,255,74,0.15) 0%, rgba(9,13,24,0.8) 100%);
-      border: 1px solid var(--neon); border-radius: 16px; padding: 16px 20px; margin-bottom: 20px;
-      display: flex; justify-content: space-between; align-items: center;
-      box-shadow: 0 0 20px rgba(181, 255, 74, 0.15); animation: pulse-border 2s infinite alternate;
-    }
-    @keyframes pulse-border { from { box-shadow: 0 0 10px rgba(181, 255, 74, 0.1); } to { box-shadow: 0 0 25px rgba(181, 255, 74, 0.4); } }
-    .rate-card small { font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; }
-    .rate-card p { font-size: 22px; font-weight: 800; margin-top: 4px; }
-    .rate-card .amount { color: #fff; }
-    .rate-card .price { color: var(--neon); text-shadow: 0 0 10px rgba(181,255,74,0.5); text-align: right; }
-
-    /* Slot Grid */
-    .slot-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(85px, 1fr)); gap: 10px; }
-    .slot { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 12px 5px; border-radius: 12px; }
-    .slot .slot-amt { font-size: 16px; font-weight: 700; }
-    .slot .slot-rate { font-size: 11px; font-weight: 600; margin-top: 4px; padding: 2px 6px; border-radius: 4px; background: rgba(255,255,255,0.1); }
-    .slot.selected .slot-rate { background: rgba(9,13,24,0.2); }
-
-    /* Bank Dropdown */
-    .bank-select-wrapper { position: relative; }
-    .bank-dropdown {
-      position: absolute; top: 100%; left: 0; right: 0;
-      background: var(--bg2); border: 1px solid var(--border); border-radius: 10px;
-      max-height: 250px; overflow-y: auto; z-index: 50; margin-top: 5px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.5); display: none;
-    }
-    .bank-dropdown.active { display: block; }
-    .bank-option {
-      padding: 10px 14px; display: flex; align-items: center; gap: 10px;
-      cursor: pointer; transition: background 0.2s; border-bottom: 1px solid rgba(255,255,255,0.05);
-    }
-    .bank-option:hover { background: var(--neon-dim); }
-    .bank-option img { width: 24px; height: 24px; object-fit: contain; background: #fff; border-radius: 4px; padding: 2px; }
-    .bank-option span { font-size: 14px; font-weight: 500; }
-
-    /* Floating Help Button */
-    .help-btn {
-      position: fixed; bottom: 24px; right: 24px; z-index: 999; width: 60px; height: 60px; border-radius: 50%;
-      background: var(--neon); color: #090D18; display: flex; align-items: center; justify-content: center;
-      font-size: 28px; box-shadow: 0 0 20px rgba(181,255,74,0.5); cursor: pointer; transition: transform 0.2s; border: none;
-      animation: float 3s ease-in-out infinite;
-    }
-    .help-btn:hover { transform: scale(1.1); }
-    .help-menu {
-      position: fixed; bottom: 95px; right: 24px; z-index: 998; background: var(--bg2); border: 1px solid var(--border);
-      border-radius: 12px; padding: 10px; display: flex; flex-direction: column; gap: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); display: none;
-    }
-    .help-menu.active { display: flex; }
-    .help-menu a {
-      display: flex; align-items: center; gap: 10px; padding: 10px 15px; border-radius: 8px;
-      text-decoration: none; color: var(--text); font-size: 14px; font-weight: 600; transition: background 0.2s; background: rgba(255,255,255,0.05);
-    }
-    .help-menu a:hover { background: rgba(255,255,255,0.1); }
-    .help-menu a img { width: 20px; height: 20px; }
-  </style>
 </head>
 <body>
   <div class="bg-orbs"></div>
   <div class="grid-bg"></div>
   <div class="toast-wrap" id="toastWrap"></div>
 
-  <div id="loadingScreen" class="loading-screen"><div class="spinner"></div></div>
-
   <!-- Login Screen -->
-  <div id="loginScreen" class="auth-screen hidden fade-in">
+  <div id="adminLogin" class="auth-screen hidden">
     <div class="auth-card glass">
-      <div class="brand center-text" style="justify-content:center; margin-bottom:20px;"><span class="brand-icon">⚡</span><span>Bull<span class="brand-accent">Pay</span></span></div>
-      <h1>Welcome <span class="text-neon">back</span></h1>
-      <form id="loginForm">
-        <label class="field"><span>User ID</span><input class="input" name="u" placeholder="your username" required /></label>
-        <label class="field"><span>Password</span><input class="input" name="p" type="password" required /></label>
-        <button type="submit" class="btn btn-primary btn-lg btn-block mt-2">Login →</button>
+      <div class="brand center-text" style="justify-content:center; margin-bottom:20px;">
+        <span class="brand-icon">⚡</span><span>Bull<span class="brand-accent">Pay</span> Admin</span>
+      </div>
+      <h1>Admin <span class="text-neon">Access</span></h1>
+      <form id="adminLoginForm">
+        <label class="field"><span>Password</span><input class="input" name="p" type="password" placeholder="••••••••" required /></label>
+        <button class="btn btn-primary btn-lg btn-block" type="submit">Login →</button>
       </form>
-      <p class="center-text text-sm text-dim mt-4"><a href="/admin" style="color:var(--neon); text-decoration:none;">Admin panel →</a></p>
+      <p class="center-text text-sm text-dim mt-4"><a href="/" style="color:var(--neon); text-decoration:none;">← Back to User Site</a></p>
     </div>
   </div>
 
-  <!-- Main App -->
-  <div id="mainApp" class="hidden fade-in">
+  <!-- Main Admin App -->
+  <div id="adminApp" class="hidden">
     <header class="app-header">
       <div class="container">
-        <div class="brand"><span class="brand-icon">⚡</span><span>Bull<span class="brand-accent">Pay</span></span></div>
-        <div class="row">
-          <button id="notifBtn" class="btn btn-ghost btn-sm" style="position:relative;">🔔<span id="notifBadge" class="hidden" style="position:absolute; top:-4px; right:-4px; background:var(--danger); color:white; border-radius:50%; width:16px; height:16px; font-size:10px; display:grid; place-items:center;">!</span></button>
-          <button id="logoutBtn" class="btn btn-ghost btn-sm">Logout</button>
-        </div>
+        <div class="brand"><span class="brand-icon">⚡</span><span>Bull<span class="brand-accent">Pay</span> Admin</span></div>
+        <button id="adminLogout" class="btn btn-ghost btn-sm">Logout</button>
       </div>
     </header>
 
     <main class="container" style="padding-top:20px; padding-bottom:60px;">
-      <div id="notifPanel" class="card glass hidden" style="position:absolute; right:20px; top:70px; z-index:100; width:300px; max-height:400px; overflow-y:auto; box-shadow:0 10px 40px rgba(0,0,0,0.8);">
-        <div class="card-title">Notifications</div>
-        <div id="notifList"></div>
+      <div class="tabs">
+        <button class="tab active" data-tab="orders">📋 Orders</button>
+        <button class="tab" data-tab="users">👥 Users & Cards</button>
+        <button class="tab" data-tab="logs">📜 Logs</button>
+        <button class="tab" data-tab="settings">⚙️ Settings</button>
       </div>
 
-      <div class="rate-card">
-        <div><small>Selected Order</small><p class="amount" id="liveRateAmount">$0</p></div>
-        <div><small>Live Rate</small><p class="price" id="liveRatePrice">₹0/USDT</p></div>
-      </div>
-
-      <div class="card balance-card">
-        <div class="balance-label">Wallet Overview <span class="live-dot"></span></div>
-        <div class="balance-amount"><span class="cur">$</span><span id="totalDeposits">0</span></div>
-        <div class="balance-meta">
-          <div><small>Orders</small><p id="orderCount">0</p></div>
-          <div><small>Approved</small><p id="approvedCount" style="color:var(--neon);">0</p></div>
-          <div><small>Pending</small><p id="pendingCount" style="color:var(--warn);">0</p></div>
-        </div>
-        <canvas id="walletChart" width="400" height="100" style="width:100%; height:120px; margin-top:15px; border-radius:8px;"></canvas>
-      </div>
-
-      <div class="tabs" style="margin-top:20px;">
-        <button class="tab active" data-tab="deposit">💳 Deposit</button>
-        <button class="tab" data-tab="banks">🏦 Banks</button>
-        <button class="tab" data-tab="orders">📋 Orders</button>
-      </div>
-
-      <section id="tab-deposit" class="tab-content">
+      <!-- TAB: ORDERS -->
+      <section id="tab-orders" class="tab-content">
         <div class="card">
-          <div class="card-title">Step 1 — Choose Amount</div>
-          <div class="slot-grid" id="slotGrid"></div>
-        </div>
-        <div class="card mt-4">
-          <div class="card-title">Step 2 — Send Payment To</div>
-          <div id="payAddressBox" class="list-item">
-            <div class="info"><strong id="payNetwork">TRC20</strong><small id="payAddress" style="word-break:break-all;">Loading...</small></div>
-            <button id="copyAddrBtn" class="btn btn-ghost btn-sm">Copy</button>
+          <div class="card-title">
+            <span>All Orders</span>
           </div>
-        </div>
-        <div class="card mt-4">
-          <div class="card-title">Step 3 — Submit Details</div>
-          <form id="orderForm">
-            <label class="field"><span>Select Bank Account</span><select class="input" name="bankId" id="bankSelect" required></select></label>
-            <label class="field"><span>Transaction ID</span><input class="input" name="txid" placeholder="Enter TXID" required /></label>
-            <label class="field"><span>Payment Screenshot</span><input class="input" type="file" name="receipt" accept="image/*" required style="padding:8px;" /></label>
-            <button type="submit" class="btn btn-primary btn-lg btn-block mt-2">Submit Order →</button>
-          </form>
-        </div>
-      </section>
-
-      <section id="tab-banks" class="tab-content hidden">
-        <div class="card">
-          <div class="card-title"><span>Your Bank Accounts</span><button id="addBankBtn" class="btn btn-primary btn-sm">+ Add</button></div>
-          <div id="banksList"></div>
-        </div>
-        <div id="addBankForm" class="card mt-4 hidden">
-          <div class="card-title">Add New Bank</div>
-          <form id="newBankForm">
-            <label class="field"><span>Account Type</span><select class="input" name="type" required><option value="Savings">Savings</option><option value="Current">Current</option></select></label>
-            
-            <label class="field">
-              <span>Bank Name</span>
-              <div class="bank-select-wrapper">
-                <input type="text" class="input" id="bankSearch" placeholder="Search Bank..." autocomplete="off" required />
-                <input type="hidden" name="bank" id="selectedBank" required />
-                <div class="bank-dropdown" id="bankDropdown"></div>
-              </div>
-            </label>
-
-            <!-- MANUAL OTHER BANK INPUT (By default Hidden) -->
-            <label class="field hidden" id="otherBankField">
-              <span>Type Bank Name</span>
-              <input type="text" class="input" id="otherBankInput" placeholder="Enter your bank name" />
-            </label>
-
-            <label class="field"><span>Account Number</span><input class="input" name="number" placeholder="Account Number" required /></label>
-            <label class="field"><span>IFSC Code</span><input class="input" name="ifsc" placeholder="IFSC Code" required style="text-transform:uppercase;" /></label>
-            <div class="row"><button type="submit" class="btn btn-primary">Save</button><button type="button" id="cancelBankBtn" class="btn btn-ghost">Cancel</button></div>
-          </form>
+          <div class="row" style="margin-bottom:15px;">
+            <input class="input" id="searchOrders" placeholder="Search Username or TXID..." style="flex:1; padding:8px 12px; font-size:13px;" />
+            <select class="input" id="filterStatus" style="width:130px; padding:8px 12px; font-size:13px;">
+              <option value="all">All Status</option>
+              <option value="pending">Pending</option>
+              <option value="approved">Approved</option>
+              <option value="rejected">Rejected</option>
+            </select>
+          </div>
+          <div id="adminOrders"></div>
         </div>
       </section>
 
-      <section id="tab-orders" class="tab-content hidden">
+      <!-- TAB: USERS -->
+      <section id="tab-users" class="tab-content hidden">
         <div class="card">
-          <div class="card-title">Order History</div>
-          <div id="ordersList"></div>
+          <div class="card-title"><span>Users</span><button id="addUserBtn" class="btn btn-primary btn-sm">+ Add User</button></div>
+          <div id="addUserForm" class="hidden" style="margin-bottom:16px;">
+            <form id="newUserForm" class="stack">
+              <label class="field"><span>Username</span><input class="input" name="u" required /></label>
+              <label class="field"><span>Password</span><input class="input" name="p" type="password" required /></label>
+              <div class="row"><button class="btn btn-primary" type="submit">Create</button><button class="btn btn-ghost" type="button" id="cancelUserBtn">Cancel</button></div>
+            </form>
+          </div>
+          <div id="adminUsers"></div>
+        </div>
+      </section>
+
+      <!-- TAB: LOGS -->
+      <section id="tab-logs" class="tab-content hidden">
+        <div class="card">
+          <div class="card-title">User Activity Logs</div>
+          <div id="adminLogs"></div>
+        </div>
+      </section>
+
+      <!-- TAB: SETTINGS -->
+      <section id="tab-settings" class="tab-content hidden">
+        <div class="card">
+          <div class="card-title">Payment Settings</div>
+          <form id="settingsForm" class="stack">
+            <label class="field"><span>Wallet Address</span><input class="input" name="address" placeholder="Your crypto/UPI address" required /></label>
+            <label class="field"><span>Network</span><input class="input" name="network" placeholder="TRC20" required /></label>
+            <button class="btn btn-primary" type="submit">Save Settings</button>
+          </form>
         </div>
       </section>
     </main>
   </div>
 
-  <button class="help-btn" id="helpBtn">💬</button>
-  <div class="help-menu" id="helpMenu">
-    <a href="https://wa.me/919999999999" target="_blank">
-      <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="WA"> WhatsApp
-    </a>
-    <a href="https://t.me/YourTelegramUsername" target="_blank">
-      <img src="https://upload.wikimedia.org/wikipedia/commons/8/82/Telegram_logo.svg" alt="TG"> Telegram
-    </a>
-  </div>
-  <!-- 24x7 Live Support Floating Button -->
-  <button class="help-btn" id="helpBtn" aria-label="Help">💬</button>
-  
-  <div class="help-menu" id="helpMenu">
-    <div style="font-size:12px; font-weight:700; color:var(--text-dim); text-transform:uppercase; margin-bottom:4px; padding-left:5px;">24x7 Support</div>
-    
-    <!-- Yahan apna WhatsApp number dalein -->
-    <a href="https://wa.me/919999999999" target="_blank">
-      <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="WA"> WhatsApp
-    </a>
-    
-    <!-- Yahan apna Telegram username dalein -->
-    <a href="https://t.me/YourTelegramUsername" target="_blank">
-      <img src="https://upload.wikimedia.org/wikipedia/commons/8/82/Telegram_logo.svg" alt="TG"> Telegram
-    </a>
-  </div>
+  <script>
+    // --- API Setup ---
+    const A = {
+      token: localStorage.getItem('bp_admin') || '',
+      async req(path, body) {
+        const h = { 'Content-Type': 'application/json' };
+        if (this.token) h['x-token'] = this.token;
+        const r = await fetch('/api/' + path, { method: 'POST', headers: h, body: body ? JSON.stringify(body) : undefined });
+        const d = await r.json().catch(() => ({}));
+        if (!r.ok) throw new Error(d.e || 'Error');
+        return d;
+      },
+    };
 
-  <script src="app.js"></script>
-</body>
-</html>
-  <script src="app.js"></script>
+    const $ = s => document.querySelector(s);
+    const $$ = s => document.querySelectorAll(s);
+
+    function toast(m, t='ok') { 
+      const el = document.createElement('div'); 
+      el.className = 'toast ' + t; 
+      el.textContent = m; 
+      $('#toastWrap').appendChild(el); 
+      setTimeout(() => el.remove(), 3500); 
+    }
+    function esc(s) { const d = document.createElement('div'); d.textContent = s ?? ''; return d.innerHTML; }
+
+    let adminState = { users: [], banks: [], orders: [], settings: {}, logs: [] };
+
+    // --- Load Data ---
+    async function loadAll() {
+      try {
+        const d = await A.req('admin/all', {});
+        adminState = d;
+        renderOrders(); 
+        renderUsers(); 
+        renderLogs(); 
+        fillSettings();
+        $('#adminLogin').classList.add('hidden'); 
+        $('#adminApp').classList.remove('hidden');
+      } catch (e) {
+        toast('❌ Load failed: ' + e.message, 'err');
+        localStorage.removeItem('bp_admin'); A.token = '';
+        showLogin();
+      }
+    }
+
+    function showLogin() { $('#adminLogin').classList.remove('hidden'); $('#adminApp').classList.add('hidden'); }
+
+    // --- Render Orders ---
+    function renderOrders() {
+      const wrap = $('#adminOrders');
+      const query = ($('#searchOrders')?.value || '').toLowerCase();
+      const filter = $('#filterStatus')?.value || 'all';
+
+      let filtered = adminState.orders;
+      if (filter !== 'all') filtered = filtered.filter(o => o.status === filter);
+      if (query) filtered = filtered.filter(o => (o.username || '').toLowerCase().includes(query) || (o.txid || '').toLowerCase().includes(query));
+
+      if (!filtered.length) { wrap.innerHTML = '<p class="text-dim center-text text-sm" style="padding:20px 0;">No orders found</p>'; return; }
+      
+      wrap.innerHTML = filtered.map(o => `
+        <div class="list-item" style="flex-direction:column; align-items:flex-start;">
+          <div style="display:flex; justify-content:space-between; width:100%;">
+            <div class="info">
+              <strong>$${o.slot} — ${esc(o.username || 'unknown')}</strong>
+              <small>TXN: ${esc(o.txid)} • ${new Date(o.ts).toLocaleString()}</small>
+            </div>
+            <div class="row">
+              ${o.status === 'pending' ? `
+                <button class="btn btn-primary btn-sm" data-approve="${o.id}">Approve</button>
+                <button class="btn btn-danger btn-sm" data-reject="${o.id}">Reject</button>
+              ` : `<span class="badge badge-${o.status}">${o.status}</span>`}
+              <!-- Delete Button -->
+              <button class="btn btn-ghost btn-sm" data-del-order="${o.id}" style="color:var(--danger); border-color:rgba(255,107,107,0.3);" title="Delete Order">🗑️</button>
+            </div>
+          </div>
+          ${o.receipt ? `<div style="margin-top:10px; width:100%;"><small style="color:var(--text-dim);">Receipt:</small><br><img src="${o.receipt}" style="max-height:100px; border-radius:8px; margin-top:5px; border:1px solid var(--border-soft);" /></div>` : ''}
+        </div>
+      `).join('');
+
+      wrap.querySelectorAll('[data-approve]').forEach(b => b.onclick = () => setStatus(b.dataset.approve, 'approved'));
+      wrap.querySelectorAll('[data-reject]').forEach(b => b.onclick = () => setStatus(b.dataset.reject, 'rejected'));
+      
+      // Delete Order Event Listener
+      wrap.querySelectorAll('[data-del-order]').forEach(b => b.onclick = async () => {
+        if (!confirm('Are you sure you want to delete this order permanently?')) return;
+        try {
+          await A.req('admin/order/del', { id: b.dataset.delOrder });
+          toast('✅ Order deleted');
+          await loadAll();
+        } catch (e) {
+          toast('❌ ' + e.message, 'err');
+        }
+      });
+    }
+
+    async function setStatus(id, status) {
+      try { await A.req('admin/order', { id, status }); toast('✅ Order ' + status); await loadAll(); } catch (e) { toast('❌ ' + e.message, 'err'); }
+    }
+
+    // --- Render Users ---
+    function renderUsers() {
+      const wrap = $('#adminUsers');
+      if (!adminState.users.length) { wrap.innerHTML = '<p class="text-dim center-text text-sm" style="padding:20px 0;">No users</p>'; return; }
+      
+      wrap.innerHTML = adminState.users.map(u => {
+        const userBanks = adminState.banks.filter(b => b.userId === u.id);
+        return `
+          <div class="list-item" style="flex-direction:column; align-items:flex-start;">
+            <div style="display:flex; justify-content:space-between; width:100%;">
+              <div class="info"><strong>${esc(u.username)}</strong><small>ID: ${esc(u.id)}</small></div>
+              <div class="row">
+                <button class="btn btn-ghost btn-sm" data-toggle="${u.id}">${u.disabled ? 'Enable' : 'Disable'}</button>
+                <button class="btn btn-ghost btn-sm" data-pass="${u.id}">Reset Pass</button>
+                <button class="btn btn-danger btn-sm" data-del="${u.id}">Delete</button>
+              </div>
+            </div>
+            ${userBanks.length ? `
+              <div style="margin-top:10px; background:rgba(255,255,255,0.02); padding:10px; border-radius:8px; width:100%;">
+                <small style="color:var(--neon); font-weight:600;">Added Cards/Banks:</small>
+                <ul style="margin-top:5px; padding-left:15px; font-size:13px; color:var(--text-dim);">
+                  ${userBanks.map(b => `<li>${esc(b.bank)} - A/C: ${esc(b.number)} (${esc(b.type)})</li>`).join('')}
+                </ul>
+              </div>
+            ` : ''}
+          </div>
+        `;
+      }).join('');
+
+      wrap.querySelectorAll('[data-toggle]').forEach(b => b.onclick = async () => { try { await A.req('admin/user/toggle', { id: b.dataset.toggle }); toast('✅ Updated'); await loadAll(); } catch (e) { toast('❌ ' + e.message, 'err'); } });
+      wrap.querySelectorAll('[data-pass]').forEach(b => b.onclick = async () => { const p = prompt('New password (min 6 chars):'); if (!p) return; try { await A.req('admin/user/pass', { id: b.dataset.pass, p }); toast('✅ Password reset'); } catch (e) { toast('❌ ' + e.message, 'err'); } });
+      wrap.querySelectorAll('[data-del]').forEach(b => b.onclick = async () => { if (!confirm('Delete this user?')) return; try { await A.req('admin/user/del', { id: b.dataset.del }); toast('✅ Deleted'); await loadAll(); } catch (e) { toast('❌ ' + e.message, 'err'); } });
+    }
+
+    // --- Render Logs ---
+    function renderLogs() {
+      const wrap = $('#adminLogs');
+      if (!adminState.logs || !adminState.logs.length) { wrap.innerHTML = '<p class="text-dim center-text text-sm" style="padding:20px 0;">No activity yet</p>'; return; }
+      
+      wrap.innerHTML = adminState.logs.map(l => {
+        const user = adminState.users.find(u => u.id === l.userId);
+        return `
+          <div class="list-item">
+            <div class="info">
+              <strong>${user ? esc(user.username) : 'Unknown'} — ${esc(l.action)}</strong>
+              <small>${esc(l.details)} • ${new Date(l.ts).toLocaleString()}</small>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // --- Settings ---
+    function fillSettings() { const f = $('#settingsForm'); f.address.value = adminState.settings.address || ''; f.network.value = adminState.settings.network || 'TRC20'; }
+    $('#settingsForm').addEventListener('submit', async (e) => {
+      e.preventDefault(); const f = e.target;
+      try { await A.req('admin/settings', { address: f.address.value, network: f.network.value }); toast('✅ Settings saved'); await loadAll(); } catch (err) { toast('❌ ' + err.message, 'err'); }
+    });
+
+    // --- Login ---
+    $('#adminLoginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      try {
+        const { t } = await A.req('admin/login', { p: e.target.p.value });
+        A.token = t; localStorage.setItem('bp_admin', t); toast('✅ Welcome, Admin'); await loadAll();
+      } catch (err) { toast('❌ ' + err.message, 'err'); }
+    });
+
+    $('#adminLogout').onclick = () => { localStorage.removeItem('bp_admin'); location.reload(); };
+    
+    // --- Tabs ---
+    $$('.tab').forEach(t => t.onclick = () => { 
+      $$('.tab').forEach(x => x.classList.remove('active')); 
+      t.classList.add('active'); 
+      $$('.tab-content').forEach(x => x.classList.add('hidden')); 
+      $('#tab-' + t.dataset.tab).classList.remove('hidden'); 
+    });
+    
+    // --- Add User ---
+    $('#addUserBtn').onclick = () => $('#addUserForm').classList.toggle('hidden');
+    $('#cancelUserBtn').onclick = () => $('#addUserForm').classList.add('hidden');
+    $('#newUserForm').addEventListener('submit', async (e) => {
+      e.preventDefault(); const f = e.target;
+      try { await A.req('admin/user/add', { u: f.u.value, p: f.p.value }); toast('✅ User created'); f.reset(); $('#addUserForm').classList.add('hidden'); await loadAll(); } catch (err) { toast('❌ ' + err.message, 'err'); }
+    });
+
+    // --- Search & Filter Listeners ---
+    document.getElementById('searchOrders').addEventListener('input', renderOrders);
+    document.getElementById('filterStatus').addEventListener('change', renderOrders);
+
+    // --- Boot App ---
+    (function boot() {
+      if (A.token) {
+        loadAll().catch(() => { localStorage.removeItem('bp_admin'); A.token = ''; showLogin(); });
+      } else {
+        showLogin();
+      }
+    })();
+  </script>
 </body>
 </html>
