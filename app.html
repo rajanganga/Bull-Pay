@@ -1,125 +1,228 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
-  <meta name="theme-color" content="#090D18" />
-  <title>BullPay — Wallet</title>
-  <link rel="manifest" href="/manifest.json">
-  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css" />
-</head>
-<body>
-  <div class="bg-orbs"></div>
-  <div class="grid-bg"></div>
-  <div class="toast-wrap" id="toastWrap"></div>
+const API = {
+  token: localStorage.getItem('bp_token') || '',
+  async req(path, body) {
+    const headers = { 'Content-Type': 'application/json' };
+    if (this.token) headers['x-token'] = this.token;
+    const res = await fetch('/api/' + path, { method: 'POST', headers, body: body ? JSON.stringify(body) : undefined });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.e || 'Request failed');
+    return data;
+  },
+  login: (u, p) => API.req('login', { u, p }),
+  me: () => API.req('me', {}),
+  addBank: (b) => API.req('bank/add', b),
+  delBank: (id) => API.req('bank/del', { id }),
+  createOrder: (o) => API.req('order', o),
+  setPin: (pin) => API.req('set-pin', { pin }),
+  readNotif: () => API.req('notif/read', {}),
+};
 
-  <div id="loadingScreen" class="loading-screen"><div class="spinner"></div></div>
+const state = { slots: [], settings: {}, banks: [], orders: [], notifs: [], selectedSlot: null };
+const $ = (sel) => document.querySelector(sel);
+const $$ = (sel) => document.querySelectorAll(sel);
 
-  <div id="loginScreen" class="auth-screen hidden fade-in">
-    <div class="auth-card glass">
-      <div class="brand center-text" style="justify-content:center; margin-bottom:20px;"><span class="brand-icon">⚡</span><span>Bull<span class="brand-accent">Pay</span></span></div>
-      <h1>Welcome <span class="text-neon">back</span></h1>
-      <form id="loginForm">
-        <label class="field"><span>User ID</span><input class="input" name="u" placeholder="your username" required /></label>
-        <label class="field"><span>Password</span><input class="input" name="p" type="password" required /></label>
-        <button type="submit" class="btn btn-primary btn-lg btn-block mt-2">Login →</button>
-      </form>
-      <p class="center-text text-sm text-dim mt-4"><a href="/admin" style="color:var(--neon); text-decoration:none;">Admin panel →</a></p>
+function toast(msg, type = 'ok') { const el = document.createElement('div'); el.className = 'toast ' + type; el.textContent = msg; $('#toastWrap').appendChild(el); setTimeout(() => el.remove(), 3500); }
+function money(n) { return Number(n || 0).toLocaleString('en-US'); }
+function escape(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+function showLogin() { $('#loadingScreen').classList.add('hidden'); $('#loginScreen').classList.remove('hidden'); $('#mainApp').classList.add('hidden'); }
+function showMain() { $('#loadingScreen').classList.add('hidden'); $('#loginScreen').classList.add('hidden'); $('#mainApp').classList.remove('hidden'); }
+
+$('#loginForm').addEventListener('submit', async (e) => {
+  e.preventDefault(); const btn = e.target.querySelector('button[type="submit"]');
+  btn.disabled = true; btn.textContent = 'Authenticating...';
+  try { const { t } = await API.login(e.target.u.value.trim(), e.target.p.value); API.token = t; localStorage.setItem('bp_token', t); toast('✅ Login successful'); await loadData(); } catch (err) { toast('❌ ' + err.message, 'err'); btn.disabled = false; btn.textContent = 'Login →'; }
+});
+
+async function loadData() {
+  try {
+    const d = await API.me();
+    state.slots = d.slots || []; state.settings = d.settings || {};
+    state.banks = d.banks || []; state.orders = d.orders || []; state.notifs = d.notifications || [];
+    if (state.selectedSlot === null && state.slots.length) state.selectedSlot = state.slots[0];
+    showMain(); renderAll();
+  } catch (err) { API.token = ''; localStorage.removeItem('bp_token'); showLogin(); if (err.message !== 'Login karein') toast('❌ ' + err.message, 'err'); }
+}
+
+function renderAll() { 
+  renderBalance(); 
+  renderSlots(); 
+  renderPaymentAddress(); 
+  renderBanks(); 
+  renderBankSelect(); 
+  renderOrders(); 
+  drawChart(); 
+  renderNotifs(); 
+  updateLiveRateCard(); // Top Card Update
+}
+
+// Top Rate Card Update Function
+function updateLiveRateCard() {
+  if (state.selectedSlot === null) {
+    $('#liveRateAmount').textContent = '$0';
+    $('#liveRatePrice').textContent = '₹0/USDT';
+    return;
+  }
+  // Formula: 500 se 125, har 100 par +2
+  const rate = 125 + ((state.selectedSlot - 500) / 100) * 2;
+  $('#liveRateAmount').textContent = `$${state.selectedSlot}`;
+  $('#liveRatePrice').textContent = `₹${rate}/USDT`;
+}
+
+function renderBalance() {
+  const total = state.orders.filter(o => o.status === 'approved').reduce((s, o) => s + Number(o.slot || 0), 0);
+  $('#totalDeposits').textContent = money(total);
+  $('#orderCount').textContent = state.orders.length;
+  $('#approvedCount').textContent = state.orders.filter(o => o.status === 'approved').length;
+  $('#pendingCount').textContent = state.orders.filter(o => o.status === 'pending').length;
+}
+
+function drawChart() {
+  const canvas = $('#walletChart'); if (!canvas) return;
+  const ctx = canvas.getContext('2d'); const w = canvas.width = canvas.offsetWidth; const h = canvas.height = 120;
+  ctx.clearRect(0, 0, w, h);
+  const data = state.orders.slice(0, 7).reverse();
+  if (data.length < 2) { ctx.fillStyle = 'rgba(181,255,74,0.5)'; ctx.font = '14px Inter'; ctx.textAlign = 'center'; ctx.fillText('Not enough data', w/2, h/2); return; }
+  const max = Math.max(...data.map(o => o.slot), 100); const stepX = w / (data.length - 1);
+  ctx.beginPath(); ctx.moveTo(0, h - (data[0].slot / max) * (h - 20));
+  for (let i = 1; i < data.length; i++) ctx.lineTo(i * stepX, h - (data[i].slot / max) * (h - 20));
+  ctx.strokeStyle = '#B5FF4A'; ctx.lineWidth = 2; ctx.stroke();
+  ctx.lineTo(w, h); ctx.lineTo(0, h); ctx.closePath();
+  const grad = ctx.createLinearGradient(0, 0, 0, h); grad.addColorStop(0, 'rgba(181, 255, 74, 0.2)'); grad.addColorStop(1, 'rgba(181, 255, 74, 0)');
+  ctx.fillStyle = grad; ctx.fill();
+}
+
+function renderSlots() {
+  const grid = $('#slotGrid'); 
+  grid.innerHTML = state.slots.map(s => {
+    const rate = 125 + ((s - 500) / 100) * 2;
+    const isSelected = state.selectedSlot === s;
+    return `
+      <div class="slot ${isSelected ? 'selected' : ''}" data-slot="${s}" style="flex-direction:column; padding:12px 6px; line-height:1.2;">
+        <span style="font-size:16px; font-weight:700;">$${s}</span>
+        <span style="font-size:11px; opacity:${isSelected ? '0.9' : '0.6'}; margin-top:4px; font-weight:600;">@ ₹${rate}</span>
+      </div>
+    `;
+  }).join('');
+  
+  grid.querySelectorAll('.slot').forEach(el => el.addEventListener('click', () => {
+    state.selectedSlot = Number(el.dataset.slot);
+    renderSlots();         // Update slot highlight
+    updateLiveRateCard();  // Update top card
+  }));
+}
+
+function renderPaymentAddress() {
+  $('#payNetwork').textContent = state.settings.network || 'TRC20';
+  $('#payAddress').textContent = state.settings.address || 'Address not set by admin';
+}
+$('#copyAddrBtn').addEventListener('click', () => {
+  const addr = state.settings.address || ''; if (!addr) return toast('Address not set', 'err');
+  navigator.clipboard.writeText(addr).then(() => toast('✅ Copied'));
+});
+
+function renderBanks() {
+  const list = $('#banksList');
+  if (!state.banks.length) { list.innerHTML = '<p class="text-dim center-text text-sm" style="padding:20px 0;">No banks added yet</p>'; return; }
+  list.innerHTML = state.banks.map(b => `
+    <div class="list-item">
+      <div class="info"><strong>${escape(b.bank)} • ${escape(b.type)}</strong><small>A/C ${escape(b.number)} • IFSC ${escape(b.ifsc)}</small></div>
+      <div class="row">
+        <button class="btn btn-ghost btn-sm" data-copy="${b.number}">Copy A/C</button>
+        <button class="btn btn-danger btn-sm" data-del-bank="${b.id}">Delete</button>
+      </div>
     </div>
-  </div>
+  `).join('');
+  list.querySelectorAll('[data-copy]').forEach(btn => btn.addEventListener('click', () => { navigator.clipboard.writeText(btn.dataset.copy); toast('✅ A/C Copied'); }));
+  list.querySelectorAll('[data-del-bank]').forEach(btn => btn.addEventListener('click', async () => {
+    if (!confirm('Delete?')) return;
+    try { await API.delBank(btn.dataset.delBank); toast('✅ Deleted'); await loadData(); } catch (e) { toast('❌ ' + e.message, 'err'); }
+  }));
+}
 
-  <div id="mainApp" class="hidden fade-in">
-    <header class="app-header">
-      <div class="container">
-        <div class="brand"><span class="brand-icon">⚡</span><span>Bull<span class="brand-accent">Pay</span></span></div>
-        <div class="row">
-          <button id="notifBtn" class="btn btn-ghost btn-sm" style="position:relative;">🔔<span id="notifBadge" class="hidden" style="position:absolute; top:-4px; right:-4px; background:var(--danger); color:white; border-radius:50%; width:16px; height:16px; font-size:10px; display:grid; place-items:center;">!</span></button>
-          <button id="logoutBtn" class="btn btn-ghost btn-sm">Logout</button>
+function renderBankSelect() {
+  const sel = $('#bankSelect');
+  if (!state.banks.length) { sel.innerHTML = '<option value="">No banks</option>'; sel.disabled = true; }
+  else { sel.disabled = false; sel.innerHTML = state.banks.map(b => `<option value="${b.id}">${escape(b.bank)} - A/C ${escape(b.number)}</option>`).join(''); }
+}
+
+function renderOrders() {
+  const list = $('#ordersList');
+  if (!state.orders.length) { list.innerHTML = '<p class="text-dim center-text text-sm" style="padding:20px 0;">No orders yet</p>'; return; }
+  list.innerHTML = state.orders.map(o => {
+    const rate = 125 + ((o.slot - 500) / 100) * 2; // Order History mein bhi rate dikhaye
+    return `
+    <div class="list-item" style="flex-direction:column; align-items:flex-start;">
+      <div style="display:flex; justify-content:space-between; width:100%;">
+        <div class="info">
+          <strong>$${money(o.slot)} (@ ₹${rate}) — ${escape(o.status)}</strong>
+          <small>TXN: ${escape(o.txid)}</small>
         </div>
+        <span class="badge badge-${o.status}">${o.status}</span>
       </div>
-    </header>
+      ${o.receipt ? `<img src="${o.receipt}" style="max-height:60px; border-radius:4px; margin-top:8px;" />` : ''}
+    </div>
+  `}).join('');
+}
 
-    <main class="container" style="padding-top:20px; padding-bottom:60px;">
-      <!-- Notifications Dropdown -->
-      <div id="notifPanel" class="card glass hidden" style="position:absolute; right:20px; top:70px; z-index:100; width:300px; max-height:400px; overflow-y:auto; box-shadow:0 10px 40px rgba(0,0,0,0.8);">
-        <div class="card-title">Notifications</div>
-        <div id="notifList"></div>
-      </div>
+function renderNotifs() {
+  const unread = state.notifs.filter(n => !n.read).length;
+  const badge = $('#notifBadge');
+  if (unread > 0) { badge.classList.remove('hidden'); badge.textContent = unread > 9 ? '9+' : unread; }
+  else badge.classList.add('hidden');
 
-      <div class="card balance-card">
-        <div class="balance-label">Wallet Overview <span class="live-dot"></span></div>
-        <div class="balance-amount"><span class="cur">$</span><span id="totalDeposits">0</span></div>
-        <div class="balance-meta">
-          <div><small>Orders</small><p id="orderCount">0</p></div>
-          <div><small>Approved</small><p id="approvedCount" style="color:var(--neon);">0</p></div>
-          <div><small>Pending</small><p id="pendingCount" style="color:var(--warn);">0</p></div>
-        </div>
-        <canvas id="walletChart" width="400" height="100" style="width:100%; height:120px; margin-top:15px; border-radius:8px;"></canvas>
-      </div>
+  $('#notifList').innerHTML = state.notifs.length ? state.notifs.map(n => `
+    <div style="padding:10px 0; border-bottom:1px solid var(--border-soft); opacity:${n.read ? '0.6' : '1'};">
+      <strong style="font-size:13px; display:block; color:var(--neon);">${escape(n.title)}</strong>
+      <span style="font-size:12px; color:var(--text-dim);">${escape(n.msg)}</span>
+    </div>
+  `).join('') : '<p class="text-dim text-sm text-center" style="padding:10px;">No notifications</p>';
+}
 
-      <div class="tabs" style="margin-top:20px;">
-        <button class="tab active" data-tab="deposit">💳 Deposit</button>
-        <button class="tab" data-tab="banks">🏦 Banks & PIN</button>
-        <button class="tab" data-tab="orders">📋 Orders</button>
-      </div>
+$('#notifBtn').onclick = () => {
+  $('#notifPanel').classList.toggle('hidden');
+  if (!state.notifs.every(n => n.read)) { API.readNotif(); setTimeout(() => loadData(), 500); }
+};
 
-      <section id="tab-deposit" class="tab-content">
-        <div class="card">
-          <div class="card-title">Step 1 — Choose Amount</div>
-          <div class="slot-grid" id="slotGrid"></div>
-        </div>
-        <div class="card mt-4">
-          <div class="card-title">Step 2 — Send Payment To</div>
-          <div id="payAddressBox" class="list-item">
-            <div class="info"><strong id="payNetwork">TRC20</strong><small id="payAddress" style="word-break:break-all;">Loading...</small></div>
-            <button id="copyAddrBtn" class="btn btn-ghost btn-sm">Copy</button>
-          </div>
-        </div>
-        <div class="card mt-4">
-          <div class="card-title">Step 3 — Submit Details</div>
-          <form id="orderForm">
-            <label class="field"><span>Select Bank Account</span><select class="input" name="bankId" id="bankSelect" required></select></label>
-            <label class="field"><span>Transaction ID</span><input class="input" name="txid" placeholder="Enter TXID" required /></label>
-            <label class="field"><span>Security PIN</span><input class="input" name="pin" type="password" placeholder="****" maxlength="4" required /></label>
-            <label class="field"><span>Payment Screenshot</span><input class="input" type="file" name="receipt" accept="image/*" required style="padding:8px;" /></label>
-            <button type="submit" class="btn btn-primary btn-lg btn-block mt-2">Submit Order →</button>
-          </form>
-        </div>
-      </section>
+$$('.tab').forEach(tab => tab.addEventListener('click', () => {
+  $$('.tab').forEach(t => t.classList.remove('active')); tab.classList.add('active');
+  $$('.tab-content').forEach(c => c.classList.add('hidden')); $('#tab-' + tab.dataset.tab).classList.remove('hidden');
+}));
 
-      <section id="tab-banks" class="tab-content hidden">
-        <div class="card">
-          <div class="card-title">🔒 Security PIN</div>
-          <form id="pinForm" class="row">
-            <input class="input" name="pin" type="password" placeholder="Set 4-digit PIN" maxlength="4" style="flex:1;" required />
-            <button type="submit" class="btn btn-primary">Save PIN</button>
-          </form>
-        </div>
-        <div class="card mt-4">
-          <div class="card-title"><span>Your Bank Accounts</span><button id="addBankBtn" class="btn btn-primary btn-sm">+ Add</button></div>
-          <div id="banksList"></div>
-        </div>
-        <div id="addBankForm" class="card mt-4 hidden">
-          <div class="card-title">Add New Bank</div>
-          <form id="newBankForm">
-            <label class="field"><span>Account Type</span><select class="input" name="type" required><option value="Savings">Savings</option><option value="Current">Current</option></select></label>
-            <label class="field"><span>Account Number</span><input class="input" name="number" required /></label>
-            <label class="field"><span>Bank Name</span><input class="input" name="bank" required /></label>
-            <label class="field"><span>IFSC Code</span><input class="input" name="ifsc" required style="text-transform:uppercase;" /></label>
-            <div class="row"><button type="submit" class="btn btn-primary">Save</button><button type="button" id="cancelBankBtn" class="btn btn-ghost">Cancel</button></div>
-          </form>
-        </div>
-      </section>
+$('#orderForm').addEventListener('submit', async (e) => {
+  e.preventDefault(); const form = e.target; const btn = form.querySelector('button[type="submit"]');
+  if (state.selectedSlot === null) return toast('Select amount', 'err');
+  if (!form.bankId.value) return toast('Add bank first', 'err');
+  const file = form.receipt.files[0]; if (!file) return toast('Upload screenshot', 'err');
+  if (file.size > 2.5 * 1024 * 1024) return toast('Image too large (Max 2MB)', 'err');
+  btn.disabled = true; btn.textContent = 'Uploading...';
+  const reader = new FileReader();
+  reader.onload = async (event) => {
+    try {
+      await API.createOrder({ bankId: form.bankId.value, slot: state.selectedSlot, txid: form.txid.value.trim(), pin: form.pin.value, receipt: event.target.result });
+      toast('✅ Submitted'); form.reset(); await loadData();
+    } catch (err) { toast('❌ ' + err.message, 'err'); }
+    btn.disabled = false; btn.textContent = 'Submit Order →';
+  };
+  reader.readAsDataURL(file);
+});
 
-      <section id="tab-orders" class="tab-content hidden">
-        <div class="card">
-          <div class="card-title">Order History</div>
-          <div id="ordersList"></div>
-        </div>
-      </section>
-    </main>
-  </div>
-  <script src="app.js"></script>
-</body>
-</html>
+$('#pinForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  try { await API.setPin(e.target.pin.value); toast('✅ PIN Saved'); e.target.reset(); } catch (err) { toast('❌ ' + err.message, 'err'); }
+});
+
+$('#addBankBtn').addEventListener('click', () => $('#addBankForm').classList.toggle('hidden'));
+$('#cancelBankBtn').addEventListener('click', () => $('#addBankForm').classList.add('hidden'));
+$('#newBankForm').addEventListener('submit', async (e) => {
+  e.preventDefault(); const form = e.target; const btn = form.querySelector('button[type="submit"]');
+  btn.disabled = true; btn.textContent = 'Saving...';
+  try { await API.addBank({ type: form.type.value, number: form.number.value.trim(), bank: form.bank.value.trim(), ifsc: form.ifsc.value.trim().toUpperCase() }); toast('✅ Bank added'); form.reset(); $('#addBankForm').classList.add('hidden'); await loadData(); } catch (err) { toast('❌ ' + err.message, 'err'); }
+  btn.disabled = false; btn.textContent = 'Save Bank';
+});
+
+$('#logoutBtn').addEventListener('click', () => { localStorage.removeItem('bp_token'); API.token = ''; location.reload(); });
+
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js');
+
+(function boot() { if (API.token) loadData(); else showLogin(); })();
