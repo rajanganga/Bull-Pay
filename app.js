@@ -143,4 +143,143 @@ function renderSlots() {
 
 function renderPaymentAddress() {
   $('#payNetwork').textContent = state.settings.network || 'TRC20';
-  $('#payAddress').textContent = state.settings.address ||
+  $('#payAddress').textContent = state.settings.address || 'Address not set by admin';
+}
+
+$('#copyAddrBtn').addEventListener('click', () => {
+  const addr = state.settings.address || '';
+  if (!addr) return toast('Address not set', 'err');
+  navigator.clipboard.writeText(addr).then(() => toast('✅ Address copied'));
+});
+
+function renderBanks() {
+  const list = $('#banksList');
+  if (!state.banks.length) {
+    list.innerHTML = '<p class="text-dim center-text text-sm" style="padding:20px 0;">No banks added yet</p>';
+    return;
+  }
+  list.innerHTML = state.banks.map(b => `
+    <div class="list-item">
+      <div class="info">
+        <strong>${escape(b.bank)} • ${escape(b.type)}</strong>
+        <small>A/C ${escape(b.number)} • IFSC ${escape(b.ifsc)}</small>
+      </div>
+      <button class="btn btn-danger btn-sm" data-del-bank="${b.id}">Delete</button>
+    </div>
+  `).join('');
+  list.querySelectorAll('[data-del-bank]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (!confirm('Delete this bank?')) return;
+      try {
+        await API.delBank(btn.dataset.delBank);
+        toast('✅ Bank deleted');
+        await loadData();
+      } catch (e) { toast('❌ ' + e.message, 'err'); }
+    });
+  });
+}
+
+function renderBankSelect() {
+  const sel = $('#bankSelect');
+  if (!state.banks.length) {
+    sel.innerHTML = '<option value="">No banks — add one first</option>';
+    sel.disabled = true;
+  } else {
+    sel.disabled = false;
+    sel.innerHTML = state.banks.map(b =>
+      `<option value="${b.id}">${escape(b.bank)} — A/C ${escape(b.number)}</option>`
+    ).join('');
+  }
+}
+
+function renderOrders() {
+  const list = $('#ordersList');
+  if (!state.orders.length) {
+    list.innerHTML = '<p class="text-dim center-text text-sm" style="padding:20px 0;">No orders yet</p>';
+    return;
+  }
+  list.innerHTML = state.orders.map(o => `
+    <div class="list-item">
+      <div class="info">
+        <strong>₹${money(o.slot)} — ${escape(o.status)}</strong>
+        <small>TXN: ${escape(o.txid)} • ${new Date(o.ts).toLocaleString()}</small>
+      </div>
+      <span class="badge badge-${o.status}">${o.status}</span>
+    </div>
+  `).join('');
+}
+
+/* ---------- Tabs ---------- */
+$$('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    $$('.tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    $$('.tab-content').forEach(c => c.classList.add('hidden'));
+    $('#tab-' + tab.dataset.tab).classList.remove('hidden');
+  });
+});
+
+/* ---------- Submit Order ---------- */
+$('#orderForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const form = e.target;
+  const btn = form.querySelector('button[type="submit"]');
+  if (state.selectedSlot === null) return toast('Select an amount first', 'err');
+  if (!form.bankId.value) return toast('Add a bank first', 'err');
+  btn.disabled = true; btn.textContent = 'Submitting...';
+  try {
+    await API.createOrder({
+      bankId: form.bankId.value,
+      slot: state.selectedSlot,
+      txid: form.txid.value.trim(),
+    });
+    toast('✅ Order submitted — awaiting approval');
+    form.txid.value = '';
+    await loadData();
+  } catch (err) {
+    toast('❌ ' + err.message, 'err');
+  }
+  btn.disabled = false; btn.textContent = 'Submit Order →';
+});
+
+/* ---------- Add Bank ---------- */
+$('#addBankBtn').addEventListener('click', () => {
+  $('#addBankForm').classList.toggle('hidden');
+});
+$('#cancelBankBtn').addEventListener('click', () => {
+  $('#addBankForm').classList.add('hidden');
+});
+$('#newBankForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const form = e.target;
+  const btn = form.querySelector('button[type="submit"]');
+  btn.disabled = true; btn.textContent = 'Saving...';
+  try {
+    await API.addBank({
+      type: form.type.value,
+      number: form.number.value.trim(),
+      bank: form.bank.value.trim(),
+      ifsc: form.ifsc.value.trim().toUpperCase(),
+    });
+    toast('✅ Bank added');
+    form.reset();
+    $('#addBankForm').classList.add('hidden');
+    await loadData();
+  } catch (err) {
+    toast('❌ ' + err.message, 'err');
+  }
+  btn.disabled = false; btn.textContent = 'Save Bank';
+});
+
+/* ---------- Logout ---------- */
+$('#logoutBtn').addEventListener('click', () => {
+  localStorage.removeItem('bp_token');
+  API.token = '';
+  location.reload();
+});
+
+/* ---------- Boot ---------- */
+(function boot() {
+  if (API.token) loadData();
+  else showLogin();
+})();
