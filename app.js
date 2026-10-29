@@ -25,13 +25,25 @@ function toast(msg, type = 'ok') { const el = document.createElement('div'); el.
 function money(n) { return Number(n || 0).toLocaleString('en-US'); }
 function escape(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
 
+// Rate Calculate karne ka formula (500 se start, har 100 par +2)
+function getRate(amount) {
+  if (!amount) return 0;
+  return 125 + ((amount - 500) / 100) * 2;
+}
+
 function showLogin() { $('#loadingScreen').classList.add('hidden'); $('#loginScreen').classList.remove('hidden'); $('#mainApp').classList.add('hidden'); }
 function showMain() { $('#loadingScreen').classList.add('hidden'); $('#loginScreen').classList.add('hidden'); $('#mainApp').classList.remove('hidden'); }
 
 $('#loginForm').addEventListener('submit', async (e) => {
   e.preventDefault(); const btn = e.target.querySelector('button[type="submit"]');
   btn.disabled = true; btn.textContent = 'Authenticating...';
-  try { const { t } = await API.login(e.target.u.value.trim(), e.target.p.value); API.token = t; localStorage.setItem('bp_token', t); toast('✅ Login successful'); await loadData(); } catch (err) { toast('❌ ' + err.message, 'err'); btn.disabled = false; btn.textContent = 'Login →'; }
+  try { 
+    const { t } = await API.login(e.target.u.value.trim(), e.target.p.value); 
+    API.token = t; localStorage.setItem('bp_token', t); 
+    toast('✅ Login successful'); await loadData(); 
+  } catch (err) { 
+    toast('❌ ' + err.message, 'err'); btn.disabled = false; btn.textContent = 'Login →'; 
+  }
 });
 
 async function loadData() {
@@ -39,12 +51,67 @@ async function loadData() {
     const d = await API.me();
     state.slots = d.slots || []; state.settings = d.settings || {};
     state.banks = d.banks || []; state.orders = d.orders || []; state.notifs = d.notifications || [];
+    
+    // Agar pehle se koi slot select nahi hai, toh default $500 select karlo
     if (state.selectedSlot === null && state.slots.length) state.selectedSlot = state.slots[0];
-    showMain(); renderAll();
-  } catch (err) { API.token = ''; localStorage.removeItem('bp_token'); showLogin(); if (err.message !== 'Login karein') toast('❌ ' + err.message, 'err'); }
+    
+    showMain(); 
+    renderAll();
+  } catch (err) { 
+    API.token = ''; localStorage.removeItem('bp_token'); showLogin(); 
+    if (err.message !== 'Login karein') toast('❌ ' + err.message, 'err'); 
+  }
 }
 
-function renderAll() { renderBalance(); renderSlots(); renderPaymentAddress(); renderBanks(); renderBankSelect(); renderOrders(); drawChart(); renderNotifs(); }
+function renderAll() { 
+  renderBalance(); 
+  renderSlots(); 
+  updateLiveRateCard();
+  renderPaymentAddress(); 
+  renderBanks(); 
+  renderBankSelect(); 
+  renderOrders(); 
+  drawChart(); 
+  renderNotifs(); 
+}
+
+// Top Rate Card ko update karna
+function updateLiveRateCard() {
+  const amountEl = $('#liveRateAmount');
+  const priceEl = $('#liveRatePrice');
+  if (!amountEl || !priceEl) return;
+
+  if (state.selectedSlot === null) {
+    amountEl.textContent = '$0';
+    priceEl.textContent = '₹0/USDT';
+  } else {
+    const rate = getRate(state.selectedSlot);
+    amountEl.textContent = `$${state.selectedSlot}`;
+    priceEl.textContent = `₹${rate}/USDT`;
+  }
+}
+
+function renderSlots() {
+  const grid = $('#slotGrid'); 
+  if (!grid) return;
+
+  grid.innerHTML = state.slots.map(s => {
+    const rate = getRate(s);
+    const isSelected = state.selectedSlot === s;
+    return `
+      <div class="slot ${isSelected ? 'selected' : ''}" data-slot="${s}">
+        <span class="slot-amt">$${s}</span>
+        <span class="slot-rate">₹${rate}</span>
+      </div>
+    `;
+  }).join('');
+  
+  grid.querySelectorAll('.slot').forEach(el => el.addEventListener('click', () => {
+    state.selectedSlot = Number(el.dataset.slot);
+    renderSlots();         // Highlight update karo
+    updateLiveRateCard();  // Top card update karo
+  }));
+}
 
 function renderBalance() {
   const total = state.orders.filter(o => o.status === 'approved').reduce((s, o) => s + Number(o.slot || 0), 0);
@@ -59,7 +126,10 @@ function drawChart() {
   const ctx = canvas.getContext('2d'); const w = canvas.width = canvas.offsetWidth; const h = canvas.height = 120;
   ctx.clearRect(0, 0, w, h);
   const data = state.orders.slice(0, 7).reverse();
-  if (data.length < 2) { ctx.fillStyle = 'rgba(181,255,74,0.5)'; ctx.font = '14px Inter'; ctx.textAlign = 'center'; ctx.fillText('Not enough data', w/2, h/2); return; }
+  if (data.length < 2) { 
+    ctx.fillStyle = 'rgba(181,255,74,0.5)'; ctx.font = '14px Inter'; ctx.textAlign = 'center'; 
+    ctx.fillText('Not enough data to draw chart', w/2, h/2); return; 
+  }
   const max = Math.max(...data.map(o => o.slot), 100); const stepX = w / (data.length - 1);
   ctx.beginPath(); ctx.moveTo(0, h - (data[0].slot / max) * (h - 20));
   for (let i = 1; i < data.length; i++) ctx.lineTo(i * stepX, h - (data[i].slot / max) * (h - 20));
@@ -69,30 +139,11 @@ function drawChart() {
   ctx.fillStyle = grad; ctx.fill();
 }
 
-function renderSlots() {
-  const grid = $('#slotGrid');
-  grid.innerHTML = state.slots.map(s => {
-    // Formula: 500 ke liye 125, 600 ke liye 127... (Har 100 par +2)
-    const rate = 125 + ((s - 500) / 100) * 2;
-    return `
-      <div class="slot ${state.selectedSlot === s ? 'selected' : ''}" data-slot="${s}" style="flex-direction:column; padding:12px 6px; line-height:1.2;">
-        <span style="font-size:16px; font-weight:700;">$${s}</span>
-        <span style="font-size:11px; opacity:0.8; margin-top:4px;">@ ₹${rate}/USDT</span>
-      </div>
-    `;
-  }).join('');
-  
-  grid.querySelectorAll('.slot').forEach(el => el.addEventListener('click', () => {
-    state.selectedSlot = Number(el.dataset.slot);
-    renderSlots();
-  }));
-}
-}
-
 function renderPaymentAddress() {
   $('#payNetwork').textContent = state.settings.network || 'TRC20';
   $('#payAddress').textContent = state.settings.address || 'Address not set by admin';
 }
+
 $('#copyAddrBtn').addEventListener('click', () => {
   const addr = state.settings.address || ''; if (!addr) return toast('Address not set', 'err');
   navigator.clipboard.writeText(addr).then(() => toast('✅ Copied'));
@@ -110,6 +161,7 @@ function renderBanks() {
       </div>
     </div>
   `).join('');
+  
   list.querySelectorAll('[data-copy]').forEach(btn => btn.addEventListener('click', () => { navigator.clipboard.writeText(btn.dataset.copy); toast('✅ A/C Copied'); }));
   list.querySelectorAll('[data-del-bank]').forEach(btn => btn.addEventListener('click', async () => {
     if (!confirm('Delete?')) return;
@@ -120,21 +172,30 @@ function renderBanks() {
 function renderBankSelect() {
   const sel = $('#bankSelect');
   if (!state.banks.length) { sel.innerHTML = '<option value="">No banks</option>'; sel.disabled = true; }
-  else { sel.disabled = false; sel.innerHTML = state.banks.map(b => `<option value="${b.id}">${escape(b.bank)} - A/C ${escape(b.number)}</option>`).join(''); }
+  else { 
+    sel.disabled = false; 
+    sel.innerHTML = state.banks.map(b => `<option value="${b.id}">${escape(b.bank)} - A/C ${escape(b.number)}</option>`).join(''); 
+  }
 }
 
 function renderOrders() {
   const list = $('#ordersList');
   if (!state.orders.length) { list.innerHTML = '<p class="text-dim center-text text-sm" style="padding:20px 0;">No orders yet</p>'; return; }
-  list.innerHTML = state.orders.map(o => `
+  
+  list.innerHTML = state.orders.map(o => {
+    const rate = getRate(o.slot); 
+    return `
     <div class="list-item" style="flex-direction:column; align-items:flex-start;">
       <div style="display:flex; justify-content:space-between; width:100%;">
-        <div class="info"><strong>$${money(o.slot)} — ${escape(o.status)}</strong><small>TXN: ${escape(o.txid)}</small></div>
+        <div class="info">
+          <strong>$${money(o.slot)} (@ ₹${rate}/USDT) — ${escape(o.status)}</strong>
+          <small>TXN: ${escape(o.txid)} • ${new Date(o.ts).toLocaleString()}</small>
+        </div>
         <span class="badge badge-${o.status}">${o.status}</span>
       </div>
       ${o.receipt ? `<img src="${o.receipt}" style="max-height:60px; border-radius:4px; margin-top:8px;" />` : ''}
     </div>
-  `).join('');
+  `}).join('');
 }
 
 function renderNotifs() {
@@ -167,6 +228,7 @@ $('#orderForm').addEventListener('submit', async (e) => {
   if (!form.bankId.value) return toast('Add bank first', 'err');
   const file = form.receipt.files[0]; if (!file) return toast('Upload screenshot', 'err');
   if (file.size > 2.5 * 1024 * 1024) return toast('Image too large (Max 2MB)', 'err');
+  
   btn.disabled = true; btn.textContent = 'Uploading...';
   const reader = new FileReader();
   reader.onload = async (event) => {
@@ -195,7 +257,6 @@ $('#newBankForm').addEventListener('submit', async (e) => {
 
 $('#logoutBtn').addEventListener('click', () => { localStorage.removeItem('bp_token'); API.token = ''; location.reload(); });
 
-// Register Service Worker for PWA
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js');
 
 (function boot() { if (API.token) loadData(); else showLogin(); })();
