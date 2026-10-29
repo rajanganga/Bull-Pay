@@ -391,3 +391,24 @@ label.field > span {
   .btn-lg { padding: 12px 20px; font-size: 15px; }
   .slot-grid { grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)); }
 }
+/* File Upload Input Fix */
+input[type="file"] {
+  color: var(--text-dim);
+  font-size: 13px;
+}
+input[type="file"]::file-selector-button {
+  background: var(--neon-dim);
+  color: var(--neon);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 12px;
+  margin-right: 10px;
+  cursor: pointer;
+  font-family: inherit;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+input[type="file"]::file-selector-button:hover {
+  background: var(--neon);
+  color: #090D18;
+}
