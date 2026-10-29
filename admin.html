@@ -81,12 +81,14 @@
         </div>
       </section>
 
-      <section id="tab-settings" class="tab-content hidden">
+            <section id="tab-settings" class="tab-content hidden">
         <div class="card">
           <div class="card-title">Payment Settings</div>
           <form id="settingsForm" class="stack">
-            <label class="field"><span>Wallet Address</span><input class="input" name="address" placeholder="Your crypto/UPI address" required /></label>
-            <label class="field"><span>Network</span><input class="input" name="network" placeholder="TRC20" required /></label>
+            <label class="field"><span>Default Network</span><input class="input" name="network" placeholder="TRC20" required /></label>
+            <label class="field"><span>TRC 20 Address</span><input class="input" name="trc20" required /></label>
+            <label class="field"><span>BEP 20 Address</span><input class="input" name="bep20" required /></label>
+            <label class="field"><span>ERC 20 Address</span><input class="input" name="erc20" required /></label>
             <button class="btn btn-primary" type="submit">Save Settings</button>
           </form>
         </div>
@@ -173,12 +175,24 @@
       }).join('');
     }
 
-    function fillSettings() { const f = $('#settingsForm'); f.address.value = adminState.settings.address || ''; f.network.value = adminState.settings.network || 'TRC20'; }
+       function fillSettings() { 
+      const f = $('#settingsForm'); 
+      f.network.value = adminState.settings.network || 'TRC20'; 
+      f.trc20.value = adminState.settings.trc20 || 'TYWTuvc8kCBbYm98frNgAkVhVrdR7hXPrh';
+      f.bep20.value = adminState.settings.bep20 || '0x7e0de6e0949cd79fbf87c38dd2b6b4ac49e6f28f';
+      f.erc20.value = adminState.settings.erc20 || '0x7e0de6e0949cd79fbf87c38dd2b6b4ac49e6f28f';
+    }
+    
     $('#settingsForm').addEventListener('submit', async (e) => {
       e.preventDefault(); const f = e.target;
-      try { await A.req('admin/settings', { address: f.address.value, network: f.network.value }); toast('✅ Settings saved'); await loadAll(); } catch (err) { toast('❌ ' + err.message, 'err'); }
+      try { 
+        await A.req('admin/settings', { 
+          address: '', network: f.network.value, 
+          trc20: f.trc20.value, bep20: f.bep20.value, erc20: f.erc20.value 
+        }); 
+        toast('✅ Settings saved'); await loadData(); 
+      } catch (err) { toast('❌ ' + err.message, 'err'); }
     });
-
     $('#adminLoginForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       try { const { t } = await A.req('admin/login', { p: e.target.p.value }); A.token = t; localStorage.setItem('bp_admin', t); toast('✅ Welcome, Admin'); await loadAll(); } catch (err) { toast('❌ ' + err.message, 'err'); }
