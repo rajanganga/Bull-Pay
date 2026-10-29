@@ -48,6 +48,22 @@ function bad(ip) { const f = fails[ip] || { n: 0 }; fails[ip] = { n: f.n + 1, t:
 
 const server = http.createServer((req, res) => {
   const url = new URL(req.url, 'http://x');
+
+  // ==============================================================
+  // NAYA CODE: Static files (CSS, JS, Images) serve karne ke liye
+  // ==============================================================
+  if (req.method === 'GET' && (url.pathname.endsWith('.css') || url.pathname.endsWith('.js') || url.pathname.endsWith('.png') || url.pathname.endsWith('.jpg') || url.pathname.endsWith('.ico'))) {
+    const ext = path.extname(url.pathname);
+    const mime = { '.css': 'text/css', '.js': 'application/javascript', '.png': 'image/png', '.jpg': 'image/jpeg', '.ico': 'image/x-icon' };
+    const filePath = path.join(__dirname, url.pathname);
+    
+    if (fs.existsSync(filePath)) {
+      res.writeHead(200, { 'content-type': mime[ext] || 'text/plain' });
+      return res.end(fs.readFileSync(filePath));
+    }
+  }
+  // ==============================================================
+
   if (req.method === 'GET' && url.pathname === '/') return page(res, 'app.html');
   if (req.method === 'GET' && url.pathname === '/admin') return page(res, 'admin.html');
   if (!url.pathname.startsWith('/api/')) return send(res, 404, { e: 'Not found' });
