@@ -101,7 +101,7 @@ function drawChart() {
   const ctx = canvas.getContext('2d'); const w = canvas.width = canvas.offsetWidth; const h = canvas.height = 120;
   ctx.clearRect(0, 0, w, h);
   const data = state.orders.slice(0, 7).reverse();
-  if (data.length < 2) { ctx.fillStyle = 'rgba(0,255,65,0.5)'; ctx.font = '14px Rajdhani'; ctx.textAlign = 'center'; ctx.fillText('Not enough data', w/2, h/2); return; }
+  if (data.length < 2) { ctx.fillStyle = 'rgba(0,255,65,0.5)'; ctx.font = '14px Orbitron'; ctx.textAlign = 'center'; ctx.fillText('Not enough data', w/2, h/2); return; }
   const max = Math.max(...data.map(o => o.slot), 100); const stepX = w / (data.length - 1);
   ctx.beginPath(); ctx.moveTo(0, h - (data[0].slot / max) * (h - 20));
   for (let i = 1; i < data.length; i++) ctx.lineTo(i * stepX, h - (data[i].slot / max) * (h - 20));
@@ -248,7 +248,7 @@ function renderOrders() {
         <div class="info"><strong>$${money(o.slot)} (@ ₹${rate}) — ${escape(o.status)}</strong><small>TXN: ${escape(o.txid)}</small></div>
         <span class="badge badge-${o.status}">${o.status}</span>
       </div>
-      ${o.receipt ? `<img src="${o.receipt}" style="max-height:60px; border-radius:4px; margin-top:8px;" />` : ''}
+      ${o.receipt ? `<img src="${o.receipt}" style="max-height:60px; border-radius:2px; margin-top:8px; border:1px solid var(--border);" />` : ''}
     </div>
   `}).join('');
 }
@@ -259,7 +259,7 @@ function renderNotifs() {
   if (unread > 0) { badge.classList.remove('hidden'); badge.textContent = unread > 9 ? '9+' : unread; } else badge.classList.add('hidden');
   $('#notifList').innerHTML = state.notifs.length ? state.notifs.map(n => `
     <div style="padding:10px 0; border-bottom:1px solid var(--border-soft); opacity:${n.read ? '0.6' : '1'};">
-      <strong style="font-size:13px; display:block; color:var(--neon);">${escape(n.title)}</strong>
+      <strong style="font-size:13px; display:block; color:var(--neon); font-family:'Orbitron';">${escape(n.title)}</strong>
       <span style="font-size:12px; color:var(--text-dim);">${escape(n.msg)}</span>
     </div>
   `).join('') : '<p class="text-dim text-sm text-center" style="padding:10px;">No notifications</p>';
