@@ -5,9 +5,23 @@ const ADMIN_PASS = process.env.ADMIN_PASS || 'admin123';
 const PORT = process.env.PORT || 3000;
 const SLOTS = Array.from({ length: 11 }, (_, i) => 500 + i * 100);
 
-const DEF = { users: [], banks: [], orders: [], settings: { address: '', network: 'TRC20' }, logs: [], notifications: [] };
+const DEF = { 
+  users: [], banks: [], orders: [], 
+  settings: { 
+    address: '', 
+    network: 'TRC20',
+    trc20: 'TYWTuvc8kCBbYm98frNgAkVhVrdR7hXPrh',
+    bep20: '0x7e0de6e0949cd79fbf87c38dd2b6b4ac49e6f28f',
+    erc20: '0x7e0de6e0949cd79fbf87c38dd2b6b4ac49e6f28f'
+  }, 
+  logs: [], notifications: [] 
+};
 let D = fs.existsSync(FILE) ? JSON.parse(fs.readFileSync(FILE, 'utf8')) : DEF;
-if (!D.logs) D.logs = []; if (!D.notifications) D.notifications = [];
+if (!D.logs) D.logs = []; 
+if (!D.notifications) D.notifications = []; 
+if (!D.settings.trc20) D.settings.trc20 = 'TYWTuvc8kCBbYm98frNgAkVhVrdR7hXPrh';
+if (!D.settings.bep20) D.settings.bep20 = '0x7e0de6e0949cd79fbf87c38dd2b6b4ac49e6f28f';
+if (!D.settings.erc20) D.settings.erc20 = '0x7e0de6e0949cd79fbf87c38dd2b6b4ac49e6f28f';
 
 const SU = (process.env.SUPABASE_URL || '').replace(/\/$/, ''), SK = process.env.SUPABASE_KEY || '';
 const H = { apikey: SK, 'content-type': 'application/json' };
@@ -136,7 +150,14 @@ const server = http.createServer((req, res) => {
         return send(res, 200, {});
       }
       if (r === 'admin/settings') {
-        D.settings = { address: clean(b.address, 120), network: clean(b.network, 20) || 'TRC20' };
+        // UPDATE: Ab teeno addresses save honge
+        D.settings = { 
+          address: clean(b.address, 120), 
+          network: clean(b.network, 20) || 'TRC20',
+          trc20: clean(b.trc20, 120) || D.settings.trc20,
+          bep20: clean(b.bep20, 120) || D.settings.bep20,
+          erc20: clean(b.erc20, 120) || D.settings.erc20
+        };
         save(); return send(res, 200, {});
       }
       return send(res, 404, { e: 'Not found' });
