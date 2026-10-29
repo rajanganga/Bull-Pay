@@ -1,3 +1,4 @@
+// BullPay server - Node 18+
 const http = require('http'), fs = require('fs'), c = require('crypto'), path = require('path');
 const FILE = path.join(process.env.DATA_DIR || __dirname, 'data.json');
 const ADMIN_PASS = process.env.ADMIN_PASS || 'admin123';
@@ -52,6 +53,7 @@ function notify(userId, title, msg) {
 const server = http.createServer((req, res) => {
   const url = new URL(req.url, 'http://x');
 
+  // Static files
   if (req.method === 'GET' && (url.pathname.endsWith('.css') || url.pathname.endsWith('.js') || url.pathname.endsWith('.png') || url.pathname.endsWith('.jpg') || url.pathname.endsWith('.ico') || url.pathname.endsWith('.json'))) {
     const ext = path.extname(url.pathname);
     const mime = { '.css': 'text/css', '.js': 'application/javascript', '.png': 'image/png', '.jpg': 'image/jpeg', '.ico': 'image/x-icon', '.json': 'application/json' };
@@ -59,8 +61,9 @@ const server = http.createServer((req, res) => {
     if (fs.existsSync(filePath)) { res.writeHead(200, { 'content-type': mime[ext] || 'text/plain' }); return res.end(fs.readFileSync(filePath)); }
   }
 
-  if (req.method === 'GET' && url.pathname === '/') return page(res, 'app.html');
-  if (req.method === 'GET' && url.pathname === '/admin') return page(res, 'admin.html');
+  // Pages Routing
+  if (req.method === 'GET' && (url.pathname === '/' || url.pathname === '/app.html')) return page(res, 'app.html');
+  if (req.method === 'GET' && (url.pathname === '/admin' || url.pathname === '/admin.html')) return page(res, 'admin.html');
   if (!url.pathname.startsWith('/api/')) return send(res, 404, { e: 'Not found' });
 
   let body = '';
@@ -124,20 +127,10 @@ const server = http.createServer((req, res) => {
         logAction(o.userId, 'Order Updated', `Admin ${b.status} order $${o.slot}`);
         return send(res, 200, {});
       }
-            if (r === 'admin/order') {
-        const o = D.orders.find(x => x.id === b.id);
-        if (!o || !['approved', 'rejected'].includes(b.status)) return send(res, 400, { e: 'Invalid' });
-        o.status = b.status; save(); 
-        notify(o.userId, 'Order Update', `Your order of $${o.slot} has been ${b.status}.`);
-        logAction(o.userId, 'Order Updated', `Admin ${b.status} order $${o.slot}`);
-        return send(res, 200, {});
-      }
-      // NAYA CODE: Order Delete karne ke liye
       if (r === 'admin/order/del') {
         const o = D.orders.find(x => x.id === b.id);
         if (!o) return send(res, 404, { e: 'Order not found' });
-        D.orders = D.orders.filter(x => x.id !== b.id);
-        save();
+        D.orders = D.orders.filter(x => x.id !== b.id); save();
         notify(o.userId, 'Order Deleted', `Your order of $${o.slot} has been removed by admin.`);
         logAction(o.userId, 'Order Deleted', `Admin deleted order $${o.slot}`);
         return send(res, 200, {});
@@ -170,11 +163,11 @@ const server = http.createServer((req, res) => {
     if (r === 'bank/del') { D.banks = D.banks.filter(x => !(x.id === b.id && x.userId === me)); save(); logAction(me, 'Bank Deleted', `ID: ${b.id}`); return send(res, 200, {}); }
     
     if (r === 'order') {
-      // Anti-Spam: Max 5 orders per minute
       orderRate[me] = orderRate[me] || { n: 0, t: Date.now() };
       if (Date.now() - orderRate[me].t > 60000) orderRate[me] = { n: 0, t: Date.now() };
       if (orderRate[me].n >= 5) return send(res, 429, { e: 'Too many orders. Wait a minute.' });
-
+      
+      const user = D.users.find(x => x.id === me);
       const bank = D.banks.find(x => x.id === b.bankId && x.userId === me), tx = clean(b.txid, 100);
       if (!SLOTS.includes(b.slot) || !bank) return send(res, 400, { e: 'Slot ya bank chunein' });
       if (tx.length < 8) return send(res, 400, { e: 'Sahi TXID daalein' });
@@ -188,14 +181,6 @@ const server = http.createServer((req, res) => {
       orderRate[me].n++;
       D.orders.push({ id: uid(), userId: me, username: user.username, slot: b.slot, bank, txid: tx, receipt, status: 'pending', ts: Date.now() });
       save(); logAction(me, 'Order Submitted', `$${b.slot}, TXN: ${tx}`);
-      return send(res, 200, {});
-    }
-    if (r === 'set-pin') {
-      const user = D.users.find(x => x.id === me);
-      if (String(b.pin).length !== 4) return send(res, 400, { e: 'PIN must be 4 digits' });
-      user.salt = user.salt || uid(); // Ensure salt exists
-      user.hashPin = hash(String(b.pin), user.salt); save();
-      logAction(me, 'PIN Created', 'Security PIN set');
       return send(res, 200, {});
     }
     send(res, 404, { e: 'Not found' });
