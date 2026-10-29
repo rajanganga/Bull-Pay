@@ -156,10 +156,6 @@ const server = http.createServer((req, res) => {
       orderRate[me] = orderRate[me] || { n: 0, t: Date.now() };
       if (Date.now() - orderRate[me].t > 60000) orderRate[me] = { n: 0, t: Date.now() };
       if (orderRate[me].n >= 5) return send(res, 429, { e: 'Too many orders. Wait a minute.' });
-      
-      const user = D.users.find(x => x.id === me);
-      if (!user.pin) return send(res, 400, { e: 'Set a Security PIN first in Bank tab.' });
-      if (hash(String(b.pin), user.salt) !== user.hashPin) return send(res, 401, { e: 'Incorrect Security PIN' });
 
       const bank = D.banks.find(x => x.id === b.bankId && x.userId === me), tx = clean(b.txid, 100);
       if (!SLOTS.includes(b.slot) || !bank) return send(res, 400, { e: 'Slot ya bank chunein' });
