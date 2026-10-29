@@ -13,33 +13,23 @@
   <div class="grid-bg"></div>
   <div class="toast-wrap" id="toastWrap"></div>
 
-  <!-- Login -->
   <div id="adminLogin" class="auth-screen hidden">
     <div class="auth-card glass">
       <div class="brand center-text" style="justify-content:center; margin-bottom:20px;">
-        <span class="brand-icon">⚡</span>
-        <span>Bull<span class="brand-accent">Pay</span> Admin</span>
+        <span class="brand-icon">⚡</span><span>Bull<span class="brand-accent">Pay</span> Admin</span>
       </div>
       <h1>Admin <span class="text-neon">Access</span></h1>
-      <p class="sub">Enter admin password</p>
       <form id="adminLoginForm">
-        <label class="field">
-          <span>Password</span>
-          <input class="input" name="p" type="password" placeholder="••••••••" required />
-        </label>
+        <label class="field"><span>Password</span><input class="input" name="p" type="password" placeholder="••••••••" required /></label>
         <button class="btn btn-primary btn-lg btn-block" type="submit">Login →</button>
       </form>
     </div>
   </div>
 
-  <!-- App -->
   <div id="adminApp" class="hidden">
     <header class="app-header">
       <div class="container">
-        <div class="brand">
-          <span class="brand-icon">⚡</span>
-          <span>Bull<span class="brand-accent">Pay</span> Admin</span>
-        </div>
+        <div class="brand"><span class="brand-icon">⚡</span><span>Bull<span class="brand-accent">Pay</span> Admin</span></div>
         <button id="adminLogout" class="btn btn-ghost btn-sm">Logout</button>
       </div>
     </header>
@@ -47,7 +37,8 @@
     <main class="container" style="padding-top:20px; padding-bottom:60px;">
       <div class="tabs">
         <button class="tab active" data-tab="orders">📋 Orders</button>
-        <button class="tab" data-tab="users">👥 Users</button>
+        <button class="tab" data-tab="users">👥 Users & Cards</button>
+        <button class="tab" data-tab="logs">📜 Activity Logs</button>
         <button class="tab" data-tab="settings">⚙️ Settings</button>
       </div>
 
@@ -60,21 +51,22 @@
 
       <section id="tab-users" class="tab-content hidden">
         <div class="card">
-          <div class="card-title">
-            <span>Users</span>
-            <button id="addUserBtn" class="btn btn-primary btn-sm">+ Add User</button>
-          </div>
+          <div class="card-title"><span>Users</span><button id="addUserBtn" class="btn btn-primary btn-sm">+ Add User</button></div>
           <div id="addUserForm" class="hidden" style="margin-bottom:16px;">
             <form id="newUserForm" class="stack">
               <label class="field"><span>Username</span><input class="input" name="u" required /></label>
               <label class="field"><span>Password</span><input class="input" name="p" type="password" required /></label>
-              <div class="row">
-                <button class="btn btn-primary" type="submit">Create</button>
-                <button class="btn btn-ghost" type="button" id="cancelUserBtn">Cancel</button>
-              </div>
+              <div class="row"><button class="btn btn-primary" type="submit">Create</button><button class="btn btn-ghost" type="button" id="cancelUserBtn">Cancel</button></div>
             </form>
           </div>
           <div id="adminUsers"></div>
+        </div>
+      </section>
+
+      <section id="tab-logs" class="tab-content hidden">
+        <div class="card">
+          <div class="card-title">User Activity Logs</div>
+          <div id="adminLogs"></div>
         </div>
       </section>
 
@@ -82,14 +74,8 @@
         <div class="card">
           <div class="card-title">Payment Settings</div>
           <form id="settingsForm" class="stack">
-            <label class="field">
-              <span>Wallet Address</span>
-              <input class="input" name="address" placeholder="Your crypto/UPI address" required />
-            </label>
-            <label class="field">
-              <span>Network</span>
-              <input class="input" name="network" placeholder="TRC20" required />
-            </label>
+            <label class="field"><span>Wallet Address</span><input class="input" name="address" placeholder="Your crypto/UPI address" required /></label>
+            <label class="field"><span>Network</span><input class="input" name="network" placeholder="TRC20" required /></label>
             <button class="btn btn-primary" type="submit">Save Settings</button>
           </form>
         </div>
@@ -113,42 +99,37 @@
     const $ = s => document.querySelector(s);
     const $$ = s => document.querySelectorAll(s);
 
-    function toast(m, t='ok') {
-      const el = document.createElement('div');
-      el.className = 'toast ' + t; el.textContent = m;
-      $('#toastWrap').appendChild(el);
-      setTimeout(() => el.remove(), 3500);
-    }
+    function toast(m, t='ok') { const el = document.createElement('div'); el.className = 'toast ' + t; el.textContent = m; $('#toastWrap').appendChild(el); setTimeout(() => el.remove(), 3500); }
     function esc(s) { const d = document.createElement('div'); d.textContent = s ?? ''; return d.innerHTML; }
 
-    let adminState = { users: [], banks: [], orders: [], settings: {} };
+    let adminState = { users: [], banks: [], orders: [], settings: {}, logs: [] };
 
     async function loadAll() {
       const d = await A.req('admin/all', {});
       adminState = d;
-      renderOrders(); renderUsers(); fillSettings();
-      $('#adminLogin').classList.add('hidden');
-      $('#adminApp').classList.remove('hidden');
+      renderOrders(); renderUsers(); renderLogs(); fillSettings();
+      $('#adminLogin').classList.add('hidden'); $('#adminApp').classList.remove('hidden');
     }
 
     function renderOrders() {
       const wrap = $('#adminOrders');
-      if (!adminState.orders.length) {
-        wrap.innerHTML = '<p class="text-dim center-text text-sm" style="padding:20px 0;">No orders</p>';
-        return;
-      }
+      if (!adminState.orders.length) { wrap.innerHTML = '<p class="text-dim center-text text-sm" style="padding:20px 0;">No orders</p>'; return; }
+      
       wrap.innerHTML = adminState.orders.map(o => `
-        <div class="list-item">
-          <div class="info">
-            <strong>₹${o.slot} — ${esc(o.username || 'unknown')}</strong>
-            <small>TXN: ${esc(o.txid)} • ${new Date(o.ts).toLocaleString()}</small>
+        <div class="list-item" style="flex-direction:column; align-items:flex-start;">
+          <div style="display:flex; justify-content:space-between; width:100%;">
+            <div class="info">
+              <strong>$${o.slot} — ${esc(o.username || 'unknown')}</strong>
+              <small>TXN: ${esc(o.txid)} • ${new Date(o.ts).toLocaleString()}</small>
+            </div>
+            <div class="row">
+              ${o.status === 'pending' ? `
+                <button class="btn btn-primary btn-sm" data-approve="${o.id}">Approve</button>
+                <button class="btn btn-danger btn-sm" data-reject="${o.id}">Reject</button>
+              ` : `<span class="badge badge-${o.status}">${o.status}</span>`}
+            </div>
           </div>
-          <div class="row">
-            ${o.status === 'pending' ? `
-              <button class="btn btn-primary btn-sm" data-approve="${o.id}">Approve</button>
-              <button class="btn btn-danger btn-sm" data-reject="${o.id}">Reject</button>
-            ` : `<span class="badge badge-${o.status}">${o.status}</span>`}
-          </div>
+          ${o.receipt ? `<div style="margin-top:10px; width:100%;"><small style="color:var(--text-dim);">Receipt:</small><br><img src="${o.receipt}" style="max-height:100px; border-radius:8px; margin-top:5px; border:1px solid var(--border-soft);" /></div>` : ''}
         </div>
       `).join('');
 
@@ -157,100 +138,81 @@
     }
 
     async function setStatus(id, status) {
-      try {
-        await A.req('admin/order', { id, status });
-        toast('✅ Order ' + status);
-        await loadAll();
-      } catch (e) { toast('❌ ' + e.message, 'err'); }
+      try { await A.req('admin/order', { id, status }); toast('✅ Order ' + status); await loadAll(); } catch (e) { toast('❌ ' + e.message, 'err'); }
     }
 
     function renderUsers() {
       const wrap = $('#adminUsers');
-      if (!adminState.users.length) {
-        wrap.innerHTML = '<p class="text-dim center-text text-sm" style="padding:20px 0;">No users</p>';
-        return;
-      }
-      wrap.innerHTML = adminState.users.map(u => `
-        <div class="list-item">
-          <div class="info">
-            <strong>${esc(u.username)}</strong>
-            <small>ID: ${esc(u.id)}</small>
+      if (!adminState.users.length) { wrap.innerHTML = '<p class="text-dim center-text text-sm" style="padding:20px 0;">No users</p>'; return; }
+      
+      wrap.innerHTML = adminState.users.map(u => {
+        const userBanks = adminState.banks.filter(b => b.userId === u.id);
+        return `
+          <div class="list-item" style="flex-direction:column; align-items:flex-start;">
+            <div style="display:flex; justify-content:space-between; width:100%;">
+              <div class="info"><strong>${esc(u.username)}</strong><small>ID: ${esc(u.id)}</small></div>
+              <div class="row">
+                <button class="btn btn-ghost btn-sm" data-toggle="${u.id}">${u.disabled ? 'Enable' : 'Disable'}</button>
+                <button class="btn btn-ghost btn-sm" data-pass="${u.id}">Reset Pass</button>
+                <button class="btn btn-danger btn-sm" data-del="${u.id}">Delete</button>
+              </div>
+            </div>
+            ${userBanks.length ? `
+              <div style="margin-top:10px; background:rgba(255,255,255,0.02); padding:10px; border-radius:8px; width:100%;">
+                <small style="color:var(--neon); font-weight:600;">Added Cards/Banks:</small>
+                <ul style="margin-top:5px; padding-left:15px; font-size:13px; color:var(--text-dim);">
+                  ${userBanks.map(b => `<li>${esc(b.bank)} - A/C: ${esc(b.number)} (${esc(b.type)})</li>`).join('')}
+                </ul>
+              </div>
+            ` : ''}
           </div>
-          <div class="row">
-            <button class="btn btn-ghost btn-sm" data-toggle="${u.id}">${u.disabled ? 'Enable' : 'Disable'}</button>
-            <button class="btn btn-ghost btn-sm" data-pass="${u.id}">Reset Pass</button>
-            <button class="btn btn-danger btn-sm" data-del="${u.id}">Delete</button>
-          </div>
-        </div>
-      `).join('');
+        `;
+      }).join('');
 
-      wrap.querySelectorAll('[data-toggle]').forEach(b => b.onclick = async () => {
-        try { await A.req('admin/user/toggle', { id: b.dataset.toggle }); toast('✅ Updated'); await loadAll(); }
-        catch (e) { toast('❌ ' + e.message, 'err'); }
-      });
-      wrap.querySelectorAll('[data-pass]').forEach(b => b.onclick = async () => {
-        const p = prompt('New password (min 6 chars):');
-        if (!p) return;
-        try { await A.req('admin/user/pass', { id: b.dataset.pass, p }); toast('✅ Password reset'); }
-        catch (e) { toast('❌ ' + e.message, 'err'); }
-      });
-      wrap.querySelectorAll('[data-del]').forEach(b => b.onclick = async () => {
-        if (!confirm('Delete this user?')) return;
-        try { await A.req('admin/user/del', { id: b.dataset.del }); toast('✅ Deleted'); await loadAll(); }
-        catch (e) { toast('❌ ' + e.message, 'err'); }
-      });
+      wrap.querySelectorAll('[data-toggle]').forEach(b => b.onclick = async () => { try { await A.req('admin/user/toggle', { id: b.dataset.toggle }); toast('✅ Updated'); await loadAll(); } catch (e) { toast('❌ ' + e.message, 'err'); } });
+      wrap.querySelectorAll('[data-pass]').forEach(b => b.onclick = async () => { const p = prompt('New password (min 6 chars):'); if (!p) return; try { await A.req('admin/user/pass', { id: b.dataset.pass, p }); toast('✅ Password reset'); } catch (e) { toast('❌ ' + e.message, 'err'); } });
+      wrap.querySelectorAll('[data-del]').forEach(b => b.onclick = async () => { if (!confirm('Delete this user?')) return; try { await A.req('admin/user/del', { id: b.dataset.del }); toast('✅ Deleted'); await loadAll(); } catch (e) { toast('❌ ' + e.message, 'err'); } });
     }
 
-    function fillSettings() {
-      const f = $('#settingsForm');
-      f.address.value = adminState.settings.address || '';
-      f.network.value = adminState.settings.network || 'TRC20';
+    function renderLogs() {
+      const wrap = $('#adminLogs');
+      if (!adminState.logs || !adminState.logs.length) { wrap.innerHTML = '<p class="text-dim center-text text-sm" style="padding:20px 0;">No activity yet</p>'; return; }
+      
+      wrap.innerHTML = adminState.logs.map(l => {
+        const user = adminState.users.find(u => u.id === l.userId);
+        return `
+          <div class="list-item">
+            <div class="info">
+              <strong>${user ? esc(user.username) : 'Unknown'} — ${esc(l.action)}</strong>
+              <small>${esc(l.details)} • ${new Date(l.ts).toLocaleString()}</small>
+            </div>
+          </div>
+        `;
+      }).join('');
     }
 
+    function fillSettings() { const f = $('#settingsForm'); f.address.value = adminState.settings.address || ''; f.network.value = adminState.settings.network || 'TRC20'; }
     $('#settingsForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const f = e.target;
-      try {
-        await A.req('admin/settings', { address: f.address.value, network: f.network.value });
-        toast('✅ Settings saved');
-        await loadAll();
-      } catch (err) { toast('❌ ' + err.message, 'err'); }
+      e.preventDefault(); const f = e.target;
+      try { await A.req('admin/settings', { address: f.address.value, network: f.network.value }); toast('✅ Settings saved'); await loadAll(); } catch (err) { toast('❌ ' + err.message, 'err'); }
     });
 
     $('#adminLoginForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       try {
         const { t } = await A.req('admin/login', { p: e.target.p.value });
-        A.token = t;
-        localStorage.setItem('bp_admin', t);
-        toast('✅ Welcome, Admin');
-        await loadAll();
+        A.token = t; localStorage.setItem('bp_admin', t); toast('✅ Welcome, Admin'); await loadAll();
       } catch (err) { toast('❌ ' + err.message, 'err'); }
     });
 
-    $('#adminLogout').onclick = () => {
-      localStorage.removeItem('bp_admin');
-      location.reload();
-    };
-
-    $$('.tab').forEach(t => t.onclick = () => {
-      $$('.tab').forEach(x => x.classList.remove('active'));
-      t.classList.add('active');
-      $$('.tab-content').forEach(x => x.classList.add('hidden'));
-      $('#tab-' + t.dataset.tab).classList.remove('hidden');
-    });
-
+    $('#adminLogout').onclick = () => { localStorage.removeItem('bp_admin'); location.reload(); };
+    $$('.tab').forEach(t => t.onclick = () => { $$('.tab').forEach(x => x.classList.remove('active')); t.classList.add('active'); $$('.tab-content').forEach(x => x.classList.add('hidden')); $('#tab-' + t.dataset.tab).classList.remove('hidden'); });
+    
     $('#addUserBtn').onclick = () => $('#addUserForm').classList.toggle('hidden');
     $('#cancelUserBtn').onclick = () => $('#addUserForm').classList.add('hidden');
     $('#newUserForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const f = e.target;
-      try {
-        await A.req('admin/user/add', { u: f.u.value, p: f.p.value });
-        toast('✅ User created');
-        f.reset(); $('#addUserForm').classList.add('hidden');
-        await loadAll();
-      } catch (err) { toast('❌ ' + err.message, 'err'); }
+      e.preventDefault(); const f = e.target;
+      try { await A.req('admin/user/add', { u: f.u.value, p: f.p.value }); toast('✅ User created'); f.reset(); $('#addUserForm').classList.add('hidden'); await loadAll(); } catch (err) { toast('❌ ' + err.message, 'err'); }
     });
 
     (function boot() {
