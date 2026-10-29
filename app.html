@@ -31,15 +31,55 @@
     .rate-card .amount { color: #fff; }
     .rate-card .price { color: var(--neon); text-shadow: 0 0 10px rgba(181,255,74,0.5); text-align: right; }
 
-    /* Slot Grid Custom Design */
+    /* Slot Grid */
     .slot-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(85px, 1fr)); gap: 10px; }
-    .slot { 
-      display: flex; flex-direction: column; align-items: center; justify-content: center;
-      padding: 12px 5px; border-radius: 12px;
-    }
+    .slot { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 12px 5px; border-radius: 12px; }
     .slot .slot-amt { font-size: 16px; font-weight: 700; }
     .slot .slot-rate { font-size: 11px; font-weight: 600; margin-top: 4px; padding: 2px 6px; border-radius: 4px; background: rgba(255,255,255,0.1); }
     .slot.selected .slot-rate { background: rgba(9,13,24,0.2); }
+
+    /* Bank Dropdown with Search */
+    .bank-select-wrapper { position: relative; }
+    .bank-dropdown {
+      position: absolute; top: 100%; left: 0; right: 0;
+      background: var(--bg2); border: 1px solid var(--border); border-radius: 10px;
+      max-height: 250px; overflow-y: auto; z-index: 50; margin-top: 5px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5); display: none;
+    }
+    .bank-dropdown.active { display: block; }
+    .bank-option {
+      padding: 10px 14px; display: flex; align-items: center; gap: 10px;
+      cursor: pointer; transition: background 0.2s; border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+    .bank-option:hover { background: var(--neon-dim); }
+    .bank-option img { width: 24px; height: 24px; object-fit: contain; background: #fff; border-radius: 4px; padding: 2px; }
+    .bank-option span { font-size: 14px; font-weight: 500; }
+
+    /* Floating Help Button */
+    .help-btn {
+      position: fixed; bottom: 24px; right: 24px; z-index: 999;
+      width: 60px; height: 60px; border-radius: 50%;
+      background: var(--neon); color: #090D18;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 28px; box-shadow: 0 0 20px rgba(181,255,74,0.5);
+      cursor: pointer; transition: transform 0.2s; border: none;
+      animation: float 3s ease-in-out infinite;
+    }
+    .help-btn:hover { transform: scale(1.1); }
+    .help-menu {
+      position: fixed; bottom: 95px; right: 24px; z-index: 998;
+      background: var(--bg2); border: 1px solid var(--border); border-radius: 12px;
+      padding: 10px; display: flex; flex-direction: column; gap: 8px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5); display: none;
+    }
+    .help-menu.active { display: flex; }
+    .help-menu a {
+      display: flex; align-items: center; gap: 10px; padding: 10px 15px;
+      border-radius: 8px; text-decoration: none; color: var(--text);
+      font-size: 14px; font-weight: 600; transition: background 0.2s; background: rgba(255,255,255,0.05);
+    }
+    .help-menu a:hover { background: rgba(255,255,255,0.1); }
+    .help-menu a img { width: 20px; height: 20px; }
   </style>
 </head>
 <body>
@@ -49,6 +89,7 @@
 
   <div id="loadingScreen" class="loading-screen"><div class="spinner"></div></div>
 
+  <!-- Login Screen -->
   <div id="loginScreen" class="auth-screen hidden fade-in">
     <div class="auth-card glass">
       <div class="brand center-text" style="justify-content:center; margin-bottom:20px;"><span class="brand-icon">⚡</span><span>Bull<span class="brand-accent">Pay</span></span></div>
@@ -62,6 +103,7 @@
     </div>
   </div>
 
+  <!-- Main App -->
   <div id="mainApp" class="hidden fade-in">
     <header class="app-header">
       <div class="container">
@@ -79,9 +121,7 @@
         <div id="notifList"></div>
       </div>
 
-      <!-- ========================================== -->
-      <!-- TOP RATE CARD (YAHAN DIKHEGA RATE)         -->
-      <!-- ========================================== -->
+      <!-- TOP RATE CARD -->
       <div class="rate-card">
         <div>
           <small>Selected Order</small>
@@ -106,14 +146,13 @@
 
       <div class="tabs" style="margin-top:20px;">
         <button class="tab active" data-tab="deposit">💳 Deposit</button>
-        <button class="tab" data-tab="banks">🏦 Banks & PIN</button>
+        <button class="tab" data-tab="banks">🏦 Banks</button>
         <button class="tab" data-tab="orders">📋 Orders</button>
       </div>
 
       <section id="tab-deposit" class="tab-content">
         <div class="card">
           <div class="card-title">Step 1 — Choose Amount</div>
-          <!-- YAHAN SLOTS DIKHE GE RATE KE SAATH -->
           <div class="slot-grid" id="slotGrid"></div>
         </div>
         <div class="card mt-4">
@@ -128,22 +167,15 @@
           <form id="orderForm">
             <label class="field"><span>Select Bank Account</span><select class="input" name="bankId" id="bankSelect" required></select></label>
             <label class="field"><span>Transaction ID</span><input class="input" name="txid" placeholder="Enter TXID" required /></label>
-            <label class="field"><span>Security PIN</span><input class="input" name="pin" type="password" placeholder="****" maxlength="4" required /></label>
             <label class="field"><span>Payment Screenshot</span><input class="input" type="file" name="receipt" accept="image/*" required style="padding:8px;" /></label>
             <button type="submit" class="btn btn-primary btn-lg btn-block mt-2">Submit Order →</button>
           </form>
         </div>
       </section>
 
+      <!-- TAB: BANKS (PIN Hata Diya) -->
       <section id="tab-banks" class="tab-content hidden">
         <div class="card">
-          <div class="card-title">🔒 Security PIN</div>
-          <form id="pinForm" class="row">
-            <input class="input" name="pin" type="password" placeholder="Set 4-digit PIN" maxlength="4" style="flex:1;" required />
-            <button type="submit" class="btn btn-primary">Save PIN</button>
-          </form>
-        </div>
-        <div class="card mt-4">
           <div class="card-title"><span>Your Bank Accounts</span><button id="addBankBtn" class="btn btn-primary btn-sm">+ Add</button></div>
           <div id="banksList"></div>
         </div>
@@ -151,9 +183,19 @@
           <div class="card-title">Add New Bank</div>
           <form id="newBankForm">
             <label class="field"><span>Account Type</span><select class="input" name="type" required><option value="Savings">Savings</option><option value="Current">Current</option></select></label>
-            <label class="field"><span>Account Number</span><input class="input" name="number" required /></label>
-            <label class="field"><span>Bank Name</span><input class="input" name="bank" required /></label>
-            <label class="field"><span>IFSC Code</span><input class="input" name="ifsc" required style="text-transform:uppercase;" /></label>
+            
+            <!-- Naya Bank Dropdown with Logo -->
+            <label class="field">
+              <span>Bank Name</span>
+              <div class="bank-select-wrapper">
+                <input type="text" class="input" id="bankSearch" placeholder="Search Bank..." autocomplete="off" required />
+                <input type="hidden" name="bank" id="selectedBank" required />
+                <div class="bank-dropdown" id="bankDropdown"></div>
+              </div>
+            </label>
+
+            <label class="field"><span>Account Number</span><input class="input" name="number" placeholder="Account Number" required /></label>
+            <label class="field"><span>IFSC Code</span><input class="input" name="ifsc" placeholder="IFSC Code" required style="text-transform:uppercase;" /></label>
             <div class="row"><button type="submit" class="btn btn-primary">Save</button><button type="button" id="cancelBankBtn" class="btn btn-ghost">Cancel</button></div>
           </form>
         </div>
@@ -167,6 +209,19 @@
       </section>
     </main>
   </div>
+
+  <!-- 24x7 Live Support Button -->
+  <button class="help-btn" id="helpBtn">💬</button>
+  <div class="help-menu" id="helpMenu">
+    <!-- YAHAN APNA WHATSAPP NUMBER AUR TELEGRAM LINK DAALEIN -->
+    <a href="https://wa.me/919999999999" target="_blank">
+      <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="WA"> WhatsApp
+    </a>
+    <a href="https://t.me/YourTelegramUsername" target="_blank">
+      <img src="https://upload.wikimedia.org/wikipedia/commons/8/82/Telegram_logo.svg" alt="TG"> Telegram
+    </a>
+  </div>
+
   <script src="app.js"></script>
 </body>
 </html>
