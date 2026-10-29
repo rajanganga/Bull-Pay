@@ -20,38 +20,45 @@ const state = { slots: [], settings: {}, banks: [], orders: [], notifs: [], sele
 const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => document.querySelectorAll(sel);
 
-// Indian Banks List (Top 20 Banks with Logo URLs)
+// Clearbit API use kar rahe hain taaki saare logos load ho (Wikipedia block karta hai)
 const INDIAN_BANKS = [
-  { name: "State Bank of India (SBI)", logo: "https://upload.wikimedia.org/wikipedia/commons/c/cc/SBI-logo.svg" },
-  { name: "HDFC Bank", logo: "https://upload.wikimedia.org/wikipedia/commons/2/28/HDFC_Bank_Logo.svg" },
-  { name: "ICICI Bank", logo: "https://upload.wikimedia.org/wikipedia/commons/1/12/ICICI_Bank_Logo.svg" },
-  { name: "Axis Bank", logo: "https://upload.wikimedia.org/wikipedia/commons/c/c5/Axis_Bank_logo.svg" },
-  { name: "Kotak Mahindra Bank", logo: "https://upload.wikimedia.org/wikipedia/commons/6/6b/Kotak_Mahindra_Bank_logo.svg" },
-  { name: "Punjab National Bank (PNB)", logo: "https://upload.wikimedia.org/wikipedia/commons/5/5d/Punjab_National_Bank_logo.svg" },
-  { name: "Bank of Baroda", logo: "https://upload.wikimedia.org/wikipedia/commons/0/0b/Bank_of_Baroda_logo.svg" },
-  { name: "Canara Bank", logo: "https://upload.wikimedia.org/wikipedia/commons/4/4a/Canara_Bank_logo.svg" },
-  { name: "Union Bank of India", logo: "https://upload.wikimedia.org/wikipedia/commons/2/2b/Union_Bank_of_India_logo.svg" },
-  { name: "IndusInd Bank", logo: "https://upload.wikimedia.org/wikipedia/commons/6/6d/IndusInd_Bank_logo.svg" },
-  { name: "Yes Bank", logo: "https://upload.wikimedia.org/wikipedia/commons/4/44/Yes_Bank_logo.svg" },
-  { name: "IDFC First Bank", logo: "https://upload.wikimedia.org/wikipedia/commons/a/a4/IDFC_First_Bank_logo.svg" },
-  { name: "Bank of India", logo: "https://upload.wikimedia.org/wikipedia/commons/1/1e/Bank_of_India_logo.svg" },
-  { name: "Central Bank of India", logo: "https://upload.wikimedia.org/wikipedia/commons/e/e2/Central_Bank_of_India_logo.svg" },
-  { name: "Indian Bank", logo: "https://upload.wikimedia.org/wikipedia/commons/d/d5/Indian_Bank_logo.svg" },
-  { name: "Indian Overseas Bank", logo: "https://upload.wikimedia.org/wikipedia/commons/f/f1/Indian_Overseas_Bank_logo.svg" },
-  { name: "UCO Bank", logo: "https://upload.wikimedia.org/wikipedia/commons/1/1a/UCO_Bank_logo.svg" },
-  { name: "Bank of Maharashtra", logo: "https://upload.wikimedia.org/wikipedia/commons/8/8b/Bank_of_Maharashtra_logo.svg" },
-  { name: "Punjab & Sind Bank", logo: "https://upload.wikimedia.org/wikipedia/commons/3/36/Punjab_%26_Sind_Bank_logo.svg" },
-  { name: "Federal Bank", logo: "https://upload.wikimedia.org/wikipedia/commons/6/6f/Federal_Bank_logo.svg" }
-].sort((a, b) => a.name.localeCompare(b.name));
+  { name: "State Bank of India (SBI)", domain: "sbi.co.in" },
+  { name: "HDFC Bank", domain: "hdfcbank.com" },
+  { name: "ICICI Bank", domain: "icicibank.com" },
+  { name: "Axis Bank", domain: "axisbank.com" },
+  { name: "Kotak Mahindra Bank", domain: "kotak.com" },
+  { name: "Punjab National Bank (PNB)", domain: "pnbindia.in" },
+  { name: "Bank of Baroda", domain: "bankofbaroda.in" },
+  { name: "Canara Bank", domain: "canarabank.com" },
+  { name: "Union Bank of India", domain: "unionbankofindia.co.in" },
+  { name: "IndusInd Bank", domain: "indusind.com" },
+  { name: "Yes Bank", domain: "yesbank.in" },
+  { name: "IDFC First Bank", domain: "idfcfirstbank.com" },
+  { name: "Bank of India", domain: "bankofindia.co.in" },
+  { name: "Central Bank of India", domain: "centralbankofindia.co.in" },
+  { name: "Indian Bank", domain: "indianbank.in" },
+  { name: "Indian Overseas Bank", domain: "iob.in" },
+  { name: "UCO Bank", domain: "ucobank.com" },
+  { name: "Bank of Maharashtra", domain: "bankofmaharashtra.in" },
+  { name: "Punjab & Sind Bank", domain: "psbindia.com" },
+  { name: "Federal Bank", domain: "federalbank.co.in" },
+  { name: "Other Bank", domain: "generic" }
+].sort((a, b) => {
+  if (a.name === "Other Bank") return 1; // Other Bank hamesha niche
+  if (b.name === "Other Bank") return -1;
+  return a.name.localeCompare(b.name);
+});
+
+function getBankLogo(domain) {
+  if (domain === "generic") return "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0Ij48cGF0aCBmaWxsPSIjQjVGRjRBIiBkPSJNMTIgMkM2LjQ4IDIgMiA2LjQ4IDIgMTJzNC40OCAxMCAxMCAxMCAxMC00LjQ4IDEwLTEwUzE3LjUyIDIgMTIgMnptMCAxOGMtNC40MSAwLTgtMy41OS04LThzMy41OS04IDgtOCA4IDMuNTkgOCA4LTQuNDEgOC04IDh6Ii8+PC9zdmc+";
+  return `https://logo.clearbit.com/${domain}`;
+}
 
 function toast(msg, type = 'ok') { const el = document.createElement('div'); el.className = 'toast ' + type; el.textContent = msg; $('#toastWrap').appendChild(el); setTimeout(() => el.remove(), 3500); }
 function money(n) { return Number(n || 0).toLocaleString('en-US'); }
 function escape(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
 
-function getRate(amount) {
-  if (!amount) return 0;
-  return 125 + ((amount - 500) / 100) * 2;
-}
+function getRate(amount) { if (!amount) return 0; return 125 + ((amount - 500) / 100) * 2; }
 
 function showLogin() { $('#loadingScreen').classList.add('hidden'); $('#loginScreen').classList.remove('hidden'); $('#mainApp').classList.add('hidden'); }
 function showMain() { $('#loadingScreen').classList.add('hidden'); $('#loginScreen').classList.add('hidden'); $('#mainApp').classList.remove('hidden'); }
@@ -97,39 +104,20 @@ function renderAll() {
 }
 
 function updateLiveRateCard() {
-  const amountEl = $('#liveRateAmount');
-  const priceEl = $('#liveRatePrice');
+  const amountEl = $('#liveRateAmount'); const priceEl = $('#liveRatePrice');
   if (!amountEl || !priceEl) return;
-
-  if (state.selectedSlot === null) {
-    amountEl.textContent = '$0';
-    priceEl.textContent = '₹0/USDT';
-  } else {
-    const rate = getRate(state.selectedSlot);
-    amountEl.textContent = `$${state.selectedSlot}`;
-    priceEl.textContent = `₹${rate}/USDT`;
-  }
+  if (state.selectedSlot === null) { amountEl.textContent = '$0'; priceEl.textContent = '₹0/USDT'; }
+  else { const rate = getRate(state.selectedSlot); amountEl.textContent = `$${state.selectedSlot}`; priceEl.textContent = `₹${rate}/USDT`; }
 }
 
 function renderSlots() {
-  const grid = $('#slotGrid'); 
-  if (!grid) return;
-
+  const grid = $('#slotGrid'); if (!grid) return;
   grid.innerHTML = state.slots.map(s => {
-    const rate = getRate(s);
-    const isSelected = state.selectedSlot === s;
-    return `
-      <div class="slot ${isSelected ? 'selected' : ''}" data-slot="${s}">
-        <span class="slot-amt">$${s}</span>
-        <span class="slot-rate">₹${rate}</span>
-      </div>
-    `;
+    const rate = getRate(s); const isSelected = state.selectedSlot === s;
+    return `<div class="slot ${isSelected ? 'selected' : ''}" data-slot="${s}"><span class="slot-amt">$${s}</span><span class="slot-rate">₹${rate}</span></div>`;
   }).join('');
-  
   grid.querySelectorAll('.slot').forEach(el => el.addEventListener('click', () => {
-    state.selectedSlot = Number(el.dataset.slot);
-    renderSlots();         
-    updateLiveRateCard();  
+    state.selectedSlot = Number(el.dataset.slot); renderSlots(); updateLiveRateCard();  
   }));
 }
 
@@ -146,10 +134,7 @@ function drawChart() {
   const ctx = canvas.getContext('2d'); const w = canvas.width = canvas.offsetWidth; const h = canvas.height = 120;
   ctx.clearRect(0, 0, w, h);
   const data = state.orders.slice(0, 7).reverse();
-  if (data.length < 2) { 
-    ctx.fillStyle = 'rgba(181,255,74,0.5)'; ctx.font = '14px Inter'; ctx.textAlign = 'center'; 
-    ctx.fillText('Not enough data to draw chart', w/2, h/2); return; 
-  }
+  if (data.length < 2) { ctx.fillStyle = 'rgba(181,255,74,0.5)'; ctx.font = '14px Inter'; ctx.textAlign = 'center'; ctx.fillText('Not enough data to draw chart', w/2, h/2); return; }
   const max = Math.max(...data.map(o => o.slot), 100); const stepX = w / (data.length - 1);
   ctx.beginPath(); ctx.moveTo(0, h - (data[0].slot / max) * (h - 20));
   for (let i = 1; i < data.length; i++) ctx.lineTo(i * stepX, h - (data[i].slot / max) * (h - 20));
@@ -181,7 +166,6 @@ function renderBanks() {
       </div>
     </div>
   `).join('');
-  
   list.querySelectorAll('[data-copy]').forEach(btn => btn.addEventListener('click', () => { navigator.clipboard.writeText(btn.dataset.copy); toast('✅ A/C Copied'); }));
   list.querySelectorAll('[data-del-bank]').forEach(btn => btn.addEventListener('click', async () => {
     if (!confirm('Delete?')) return;
@@ -192,16 +176,15 @@ function renderBanks() {
 function renderBankSelect() {
   const sel = $('#bankSelect');
   if (!state.banks.length) { sel.innerHTML = '<option value="">No banks</option>'; sel.disabled = true; }
-  else { 
-    sel.disabled = false; 
-    sel.innerHTML = state.banks.map(b => `<option value="${b.id}">${escape(b.bank)} - A/C ${escape(b.number)}</option>`).join(''); 
-  }
+  else { sel.disabled = false; sel.innerHTML = state.banks.map(b => `<option value="${b.id}">${escape(b.bank)} - A/C ${escape(b.number)}</option>`).join(''); }
 }
 
-// CUSTOM BANK DROPDOWN SEARCH LOGIC
+// CUSTOM BANK DROPDOWN SEARCH LOGIC + OTHER BANK HANDLER
 const bankSearchInput = $('#bankSearch');
 const bankDropdown = $('#bankDropdown');
 const selectedBankInput = $('#selectedBank');
+const otherBankField = $('#otherBankField');
+const otherBankInput = $('#otherBankInput');
 
 if (bankSearchInput) {
   function renderDropdown(query) {
@@ -212,37 +195,39 @@ if (bankSearchInput) {
     }
     bankDropdown.innerHTML = filtered.map(b => `
       <div class="bank-option" data-name="${b.name}">
-        <img src="${b.logo}" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0Ij48cGF0aCBmaWxsPSIjY2NjIiBkPSJNMTIgMkM2LjQ4IDIgMiA2LjQ4IDIgMTJzNC40OCAxMCAxMCAxMCAxMC00LjQ4IDEwLTEwUzE3LjUyIDIgMTIgMnptMCAxOGMtNC40MSAwLTgtMy41OS04LThzMy41OS04IDgtOCA4IDMuNTkgOCA4LTQuNDEgOC04IDh6Ii8+PC9zdmc+'" alt="Logo">
+        <img src="${getBankLogo(b.domain)}" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0Ij48cGF0aCBmaWxsPSIjY2NjIiBkPSJNMTIgMkM2LjQ4IDIgMiA2LjQ4IDIgMTJzNC40OCAxMCAxMCAxMCAxMC00LjQ4IDEwLTEwUzE3LjUyIDIgMTIgMnptMCAxOGMtNC40MSAwLTgtMy41OS04LThzMy41OS04IDgtOCA4IDMuNTkgOCA4LTQuNDEgOC04IDh6Ii8+PC9zdmc+'" alt="Logo">
         <span>${b.name}</span>
       </div>
     `).join('');
 
     bankDropdown.querySelectorAll('.bank-option').forEach(opt => {
       opt.addEventListener('click', () => {
-        bankSearchInput.value = opt.dataset.name;
-        selectedBankInput.value = opt.dataset.name;
+        const bankName = opt.dataset.name;
+        bankSearchInput.value = bankName;
+        selectedBankInput.value = bankName;
         bankDropdown.classList.remove('active');
+
+        // Agar Other Bank select hua toh input box dikhao
+        if (bankName === 'Other Bank') {
+          otherBankField.classList.remove('hidden');
+          otherBankInput.required = true;
+          otherBankInput.focus();
+        } else {
+          otherBankField.classList.add('hidden');
+          otherBankInput.required = false;
+          otherBankInput.value = '';
+        }
       });
     });
   }
 
   bankSearchInput.addEventListener('focus', () => { renderDropdown(bankSearchInput.value); bankDropdown.classList.add('active'); });
   bankSearchInput.addEventListener('input', (e) => { renderDropdown(e.target.value); bankDropdown.classList.add('active'); });
-  
-  // Close dropdown when clicked outside
-  document.addEventListener('click', (e) => {
-    if (!bankSearchInput.contains(e.target) && !bankDropdown.contains(e.target)) {
-      bankDropdown.classList.remove('active');
-    }
-  });
+  document.addEventListener('click', (e) => { if (!bankSearchInput.contains(e.target) && !bankDropdown.contains(e.target)) bankDropdown.classList.remove('active'); });
 }
 
-// HELP BUTTON TOGGLE
-$('#helpBtn').addEventListener('click', () => {
-  $('#helpMenu').classList.toggle('active');
-});
+$('#helpBtn').addEventListener('click', () => { $('#helpMenu').classList.toggle('active'); });
 
-// ORDER SUBMIT (PIN removed)
 $('#orderForm').addEventListener('submit', async (e) => {
   e.preventDefault(); const form = e.target; const btn = form.querySelector('button[type="submit"]');
   if (state.selectedSlot === null) return toast('Select amount', 'err');
@@ -264,27 +249,30 @@ $('#orderForm').addEventListener('submit', async (e) => {
 
 $('#addBankBtn').addEventListener('click', () => $('#addBankForm').classList.toggle('hidden'));
 $('#cancelBankBtn').addEventListener('click', () => $('#addBankForm').classList.add('hidden'));
+
 $('#newBankForm').addEventListener('submit', async (e) => {
   e.preventDefault(); const form = e.target; const btn = form.querySelector('button[type="submit"]');
   
-  if (!selectedBankInput.value) return toast('Please select a bank from dropdown', 'err');
+  let finalBankName = selectedBankInput.value;
+  // Agar Other Bank select kiya hai, toh manual input ki value uthao
+  if (finalBankName === 'Other Bank') {
+    if (!otherBankInput.value.trim()) return toast('Please enter your bank name', 'err');
+    finalBankName = otherBankInput.value.trim();
+  } else if (!finalBankName) {
+    return toast('Please select a bank', 'err');
+  }
 
   btn.disabled = true; btn.textContent = 'Saving...';
   try { 
-    await API.addBank({ 
-      type: form.type.value, 
-      number: form.number.value.trim(), 
-      bank: selectedBankInput.value, 
-      ifsc: form.ifsc.value.trim().toUpperCase() 
-    }); 
+    await API.addBank({ type: form.type.value, number: form.number.value.trim(), bank: finalBankName, ifsc: form.ifsc.value.trim().toUpperCase() }); 
     toast('✅ Bank added'); 
     form.reset(); 
-    selectedBankInput.value = ''; // Reset hidden input
+    selectedBankInput.value = ''; 
+    otherBankField.classList.add('hidden');
+    otherBankInput.value = '';
     $('#addBankForm').classList.add('hidden'); 
     await loadData(); 
-  } catch (err) { 
-    toast('❌ ' + err.message, 'err'); 
-  }
+  } catch (err) { toast('❌ ' + err.message, 'err'); }
   btn.disabled = false; btn.textContent = 'Save Bank';
 });
 
@@ -303,10 +291,7 @@ function renderOrders() {
     return `
     <div class="list-item" style="flex-direction:column; align-items:flex-start;">
       <div style="display:flex; justify-content:space-between; width:100%;">
-        <div class="info">
-          <strong>$${money(o.slot)} (@ ₹${rate}) — ${escape(o.status)}</strong>
-          <small>TXN: ${escape(o.txid)}</small>
-        </div>
+        <div class="info"><strong>$${money(o.slot)} (@ ₹${rate}) — ${escape(o.status)}</strong><small>TXN: ${escape(o.txid)}</small></div>
         <span class="badge badge-${o.status}">${o.status}</span>
       </div>
       ${o.receipt ? `<img src="${o.receipt}" style="max-height:60px; border-radius:4px; margin-top:8px;" />` : ''}
