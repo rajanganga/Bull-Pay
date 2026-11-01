@@ -43,7 +43,13 @@ function getBankLogo(domain) {
 function toast(msg, type = 'ok') { const el = document.createElement('div'); el.className = 'toast ' + type; el.textContent = msg; $('#toastWrap').appendChild(el); setTimeout(() => el.remove(), 3500); }
 function money(n) { return Number(n || 0).toLocaleString('en-US'); }
 function escape(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
-function getRate(amount) { if (!amount) return 0; return 125 + ((amount - 500) / 100) * 2; }
+
+// NAYA RATE FORMULA: 100-500 tak 125, 500 ke baad har 100 par +1
+function getRate(amount) {
+  if (!amount || amount < 100) return 0;
+  if (amount <= 500) return 125;
+  return 125 + Math.floor((amount - 500) / 100) * 1;
+}
 
 function showLogin() { $('#loadingScreen').classList.add('hidden'); $('#loginScreen').classList.remove('hidden'); $('#mainApp').classList.add('hidden'); }
 function showMain() { $('#loadingScreen').classList.add('hidden'); $('#loginScreen').classList.add('hidden'); $('#mainApp').classList.remove('hidden'); }
@@ -75,8 +81,15 @@ function renderAll() {
 function updateLiveRateCard() {
   const amountEl = $('#liveRateAmount'); const priceEl = $('#liveRatePrice');
   if (!amountEl || !priceEl) return;
-  if (state.selectedSlot === null) { amountEl.textContent = '$0'; priceEl.textContent = '₹0/USDT'; }
-  else { const rate = getRate(state.selectedSlot); amountEl.textContent = `$${state.selectedSlot}`; priceEl.textContent = `₹${rate}/USDT`; }
+  
+  if (!state.selectedSlot || state.selectedSlot < 100) { 
+    amountEl.textContent = '$0'; 
+    priceEl.textContent = '₹0/USDT'; 
+  } else { 
+    const rate = getRate(state.selectedSlot); 
+    amountEl.textContent = `$${state.selectedSlot}`; 
+    priceEl.textContent = `₹${rate}/USDT`; 
+  }
 }
 
 function renderSlots() {
@@ -85,10 +98,32 @@ function renderSlots() {
     const rate = getRate(s); const isSelected = state.selectedSlot === s;
     return `<div class="slot ${isSelected ? 'selected' : ''}" data-slot="${s}"><span class="slot-amt">$${s}</span><span class="slot-rate">₹${rate}</span></div>`;
   }).join('');
+  
   grid.querySelectorAll('.slot').forEach(el => el.addEventListener('click', () => {
-    state.selectedSlot = Number(el.dataset.slot); renderSlots(); updateLiveRateCard();  
+    state.selectedSlot = Number(el.dataset.slot); 
+    $('#manualAmount').value = ''; 
+    renderSlots(); 
+    updateLiveRateCard();  
   }));
 }
+
+$('#manualAmount').addEventListener('input', (e) => {
+  let val = Number(e.target.value);
+  if (val > 0) {
+    if (val < 100) {
+      toast('Minimum $100 required', 'err');
+      state.selectedSlot = null;
+    } else {
+      state.selectedSlot = val;
+    }
+    renderSlots(); 
+    updateLiveRateCard();
+  } else {
+    state.selectedSlot = state.slots[0] || null;
+    renderSlots();
+    updateLiveRateCard();
+  }
+});
 
 function renderBalance() {
   const total = state.orders.filter(o => o.status === 'approved').reduce((s, o) => s + Number(o.slot || 0), 0);
@@ -190,10 +225,9 @@ if (bankSearchInput) {
 }
 
 $('#helpBtn').addEventListener('click', () => { $('#helpMenu').classList.toggle('active'); });
-
 $('#orderForm').addEventListener('submit', async (e) => {
   e.preventDefault(); const form = e.target; const btn = form.querySelector('button[type="submit"]');
-  if (state.selectedSlot === null) return toast('Select amount', 'err');
+  if (state.selectedSlot === null || state.selectedSlot < 100) return toast('Select amount or enter min $100', 'err');
   if (!form.bankId.value) return toast('Add bank first', 'err');
   const file = form.receipt.files[0]; if (!file) return toast('Upload screenshot', 'err');
   if (file.size > 2.5 * 1024 * 1024) return toast('Image too large (Max 2MB)', 'err');
@@ -201,7 +235,7 @@ $('#orderForm').addEventListener('submit', async (e) => {
   btn.disabled = true; btn.textContent = 'Uploading...';
   const reader = new FileReader();
   reader.onload = async (event) => {
-    try { await API.createOrder({ bankId: form.bankId.value, slot: state.selectedSlot, txid: form.txid.value.trim(), receipt: event.target.result }); toast('✅ Submitted'); form.reset(); await loadData(); } 
+    try { await API.createOrder({ bankId: form.bankId.value, slot: state.selectedSlot, txid: form.txid.value.trim(), receipt: event.target.result }); toast('✅ Submitted'); form.reset(); $('#manualAmount').value = ''; await loadData(); } 
     catch (err) { toast('❌ ' + err.message, 'err'); }
     btn.disabled = false; btn.textContent = 'Submit Order →';
   };
@@ -211,7 +245,6 @@ $('#orderForm').addEventListener('submit', async (e) => {
 $('#addBankBtn').addEventListener('click', () => $('#addBankForm').classList.toggle('hidden'));
 $('#cancelBankBtn').addEventListener('click', () => $('#addBankForm').classList.add('hidden'));
 
-// Bank Add karte waqt Confirm Account Number check
 $('#newBankForm').addEventListener('submit', async (e) => {
   e.preventDefault(); const form = e.target; const btn = form.querySelector('button[type="submit"]');
   let finalBankName = selectedBankInput.value;
@@ -230,7 +263,6 @@ $('#newBankForm').addEventListener('submit', async (e) => {
   btn.disabled = false; btn.textContent = 'Save Bank';
 });
 
-// Password Update Form Submit
 $('#updatePassForm').addEventListener('submit', async (e) => {
   e.preventDefault(); const form = e.target; const btn = form.querySelector('button[type="submit"]');
   btn.disabled = true; btn.textContent = 'Updating...';
