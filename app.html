@@ -15,7 +15,6 @@
 
   <div id="loadingScreen" class="loading-screen"><div class="spinner"></div></div>
 
-  <!-- Login Screen -->
   <div id="loginScreen" class="auth-screen hidden fade-in">
     <div class="auth-card glass">
       <div class="brand center-text" style="justify-content:center; margin-bottom:20px;"><span class="brand-icon">⚡</span><span>Bull<span class="brand-accent">Pay</span></span></div>
@@ -29,7 +28,6 @@
     </div>
   </div>
 
-  <!-- Main App -->
   <div id="mainApp" class="hidden fade-in">
     <header class="app-header">
       <div class="container">
@@ -48,13 +46,11 @@
         <div id="notifList"></div>
       </div>
 
-      <!-- RATE HUD -->
       <div class="rate-card">
         <div><small>Selected Order</small><p class="amount" id="liveRateAmount">$0</p></div>
         <div><small>Live Rate</small><p class="price" id="liveRatePrice">₹0/USDT</p></div>
       </div>
 
-      <!-- BALANCE HUD -->
       <div class="card balance-card">
         <div class="balance-label">Wallet Overview <span class="live-dot"></span></div>
         <div class="balance-amount"><span class="cur">$</span><span id="totalDeposits">0</span></div>
@@ -66,14 +62,13 @@
         <canvas id="walletChart" width="400" height="100" style="width:100%; height:120px; margin-top:15px;"></canvas>
       </div>
 
-      <!-- GAME MENU TABS -->
       <div class="tabs" style="margin-top:24px;">
         <button class="tab active" data-tab="deposit">💳 Deposit</button>
         <button class="tab" data-tab="banks">🏦 Banks</button>
         <button class="tab" data-tab="orders">📋 Orders</button>
+        <button class="tab" data-tab="settings">⚙️ Settings</button>
       </div>
 
-      <!-- DEPOSIT SECTION -->
       <section id="tab-deposit" class="tab-content">
         <div class="card">
           <div class="card-title">Step 1 — Choose Amount</div>
@@ -91,13 +86,9 @@
               <option value="ERC20">ERC 20 (Ethereum)</option>
             </select>
           </label>
-
           <div id="paymentDetails" class="hidden" style="margin-top:16px; background:rgba(0,255,65,0.05); border:1px dashed var(--neon); padding:16px; border-radius:2px;">
             <div class="row" style="justify-content:space-between; margin-bottom:12px;">
-              <div class="row">
-                <img src="https://cryptologos.cc/logos/tether-usdt-logo.svg?v=025" alt="USDT" style="width:28px; height:28px;" />
-                <strong style="color:var(--neon); font-family:'Orbitron'; font-size:16px;">USDT</strong>
-              </div>
+              <div class="row"><img src="https://cryptologos.cc/logos/tether-usdt-logo.svg?v=025" alt="USDT" style="width:28px; height:28px;" /><strong style="color:var(--neon); font-family:'Orbitron'; font-size:16px;">USDT</strong></div>
               <span class="badge badge-approved" id="networkBadge">TRC20</span>
             </div>
             <p style="word-break:break-all; font-size:14px; color:var(--text-dim); margin-bottom:12px; font-family:'Rajdhani';" id="addressText">-</p>
@@ -116,7 +107,6 @@
         </div>
       </section>
 
-      <!-- BANKS SECTION -->
       <section id="tab-banks" class="tab-content hidden">
         <div class="card">
           <div class="card-title"><span>Your Bank Accounts</span><button id="addBankBtn" class="btn btn-primary btn-sm">+ Add</button></div>
@@ -138,20 +128,34 @@
               <span>Type Bank Name</span>
               <input type="text" class="input" id="otherBankInput" placeholder="Enter your bank name" />
             </label>
-            <label class="field"><span>Account Number</span><input class="input" name="number" placeholder="Account Number" required /></label>
+            <label class="field"><span>Account Number</span><input class="input" name="number" id="accNum" placeholder="Account Number" required /></label>
+            <!-- NAYA: Confirm Account Number -->
+            <label class="field"><span>Confirm Account Number</span><input class="input" name="confirmNumber" id="confirmAccNum" placeholder="Re-enter Account Number" required /></label>
             <label class="field"><span>IFSC Code</span><input class="input" name="ifsc" placeholder="IFSC Code" required style="text-transform:uppercase;" /></label>
             <div class="row"><button type="submit" class="btn btn-primary">Save Bank</button><button type="button" id="cancelBankBtn" class="btn btn-ghost">Cancel</button></div>
           </form>
         </div>
       </section>
 
-      <!-- ORDERS SECTION -->
       <section id="tab-orders" class="tab-content hidden">
         <div class="card">
           <div class="card-title">Order History</div>
           <div id="ordersList"></div>
         </div>
       </section>
+
+      <!-- NAYA: SETTINGS TAB (Password Update) -->
+      <section id="tab-settings" class="tab-content hidden">
+        <div class="card">
+          <div class="card-title">Update Password</div>
+          <form id="updatePassForm">
+            <label class="field"><span>Current Password</span><input class="input" name="oldP" type="password" placeholder="Enter current password" required /></label>
+            <label class="field"><span>New Password</span><input class="input" name="newP" type="password" placeholder="Min 6 characters" required /></label>
+            <button type="submit" class="btn btn-primary btn-block mt-2">Update Password</button>
+          </form>
+        </div>
+      </section>
+
     </main>
   </div>
 
@@ -159,71 +163,9 @@
   <div class="help-menu" id="helpMenu">
     <div style="font-size:12px; font-weight:700; color:var(--text-dim); text-transform:uppercase; margin-bottom:4px; padding-left:5px; font-family:'Orbitron';">24x7 Support</div>
     <a href="https://wa.me/919999999999" target="_blank"><img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="WA"> WhatsApp</a>
-    <a href="https://t.me/bullpayoriginal" target="_blank"><img src="https://upload.wikimedia.org/wikipedia/commons/8/82/Telegram_logo.svg" alt="TG"> Telegram</a>
+    <a href="https://t.me/YourTelegramUsername" target="_blank"><img src="https://upload.wikimedia.org/wikipedia/commons/8/82/Telegram_logo.svg" alt="TG"> Telegram</a>
   </div>
 
   <script src="app.js"></script>
-    <!-- BULL CURSOR TRAIL SCRIPT -->
-  <script>
-    // Sirf desktop/laptop par chalane ke liye check (Mobile par touch se hoga)
-    if (!('ontouchstart' in window)) {
-      let lastX = 0, lastY = 0;
-      let trailDistance = 0;
-      
-      // Jab mouse move ho
-      document.addEventListener('mousemove', (e) => {
-        // Distance calculate karein taaki har pixel par bull na aaye
-        const dist = Math.hypot(e.pageX - lastX, e.pageY - lastY);
-        
-        if (dist > 60) { // Har 60px move par ek bull banega
-          lastX = e.pageX;
-          lastY = e.pageY;
-          createTrail(e.pageX, e.pageY);
-        }
-      });
-
-      function createTrail(x, y) {
-        const bull = document.createElement('div');
-        bull.className = 'bull-trail';
-        bull.innerText = '🐂';
-        
-        // Position set karein
-        bull.style.left = (x - 15) + 'px';
-        bull.style.top = (y - 15) + 'px';
-        
-        // Random rotation dein thoda natural lagne ke liye
-        const rotation = Math.random() * 40 - 20; 
-        bull.style.transform = `rotate(${rotation}deg)`;
-        
-        document.body.appendChild(bull);
-
-        // 1 second baad bull ko delete kar dein
-        setTimeout(() => {
-          bull.remove();
-        }, 1000);
-      }
-    }
-
-    // Jab screen par click ho
-    document.addEventListener('mousedown', (e) => {
-      createClickBull(e.pageX, e.pageY);
-    });
-
-    function createClickBull(x, y) {
-      const bull = document.createElement('div');
-      bull.className = 'bull-click';
-      bull.innerText = '🐂';
-      
-      bull.style.left = (x - 30) + 'px'; // Center align
-      bull.style.top = (y - 30) + 'px';
-      
-      document.body.appendChild(bull);
-
-      // Animation ke baad delete kar dein
-      setTimeout(() => {
-        bull.remove();
-      }, 800);
-    }
-  </script>
 </body>
-</html>
+              </html>
