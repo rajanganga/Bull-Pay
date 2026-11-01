@@ -14,6 +14,7 @@ const API = {
   delBank: (id) => API.req('bank/del', { id }),
   createOrder: (o) => API.req('order', o),
   readNotif: () => API.req('notif/read', {}),
+  updatePass: (oldP, newP) => API.req('user/pass', { oldP, newP }) 
 };
 
 const state = { slots: [], settings: {}, banks: [], orders: [], notifs: [], selectedSlot: null, selectedNetwork: null };
@@ -63,7 +64,7 @@ async function loadData() {
     state.banks = d.banks || []; state.orders = d.orders || []; state.notifs = d.notifications || [];
     if (state.selectedSlot === null && state.slots.length) state.selectedSlot = state.slots[0];
     showMain(); renderAll();
-  } catch (err) { API.token = ''; localStorage.removeItem('bp_token'); showLogin(); if (err.message !== 'Login karein') toast('❌ ' + err.message, 'err'); }
+  } catch (err) { API.token = ''; localStorage.removeItem('bp_token'); showLogin(); if (err.message !== 'Please login') toast('❌ ' + err.message, 'err'); }
 }
 
 function renderAll() { 
@@ -111,7 +112,6 @@ function drawChart() {
   ctx.fillStyle = grad; ctx.fill();
 }
 
-// NETWORK SELECTION LOGIC
 function renderPaymentAddress() {
   const select = $('#networkSelect');
   const details = $('#paymentDetails');
@@ -121,18 +121,12 @@ function renderPaymentAddress() {
   if (select) {
     select.addEventListener('change', (e) => {
       const net = e.target.value;
-      if (!net) {
-        details.classList.add('hidden');
-        return;
-      }
+      if (!net) { details.classList.add('hidden'); return; }
       let address = '';
       if (net === 'TRC20') address = state.settings.trc20 || 'TYWTuvc8kCBbYm98frNgAkVhVrdR7hXPrh';
       else if (net === 'BEP20') address = state.settings.bep20 || '0x7e0de6e0949cd79fbf87c38dd2b6b4ac49e6f28f';
       else if (net === 'ERC20') address = state.settings.erc20 || '0x7e0de6e0949cd79fbf87c38dd2b6b4ac49e6f28f';
-      
-      addrText.textContent = address;
-      badge.textContent = net;
-      details.classList.remove('hidden');
+      addrText.textContent = address; badge.textContent = net; details.classList.remove('hidden');
     });
   }
 }
@@ -216,11 +210,17 @@ $('#orderForm').addEventListener('submit', async (e) => {
 
 $('#addBankBtn').addEventListener('click', () => $('#addBankForm').classList.toggle('hidden'));
 $('#cancelBankBtn').addEventListener('click', () => $('#addBankForm').classList.add('hidden'));
+
+// Bank Add karte waqt Confirm Account Number check
 $('#newBankForm').addEventListener('submit', async (e) => {
   e.preventDefault(); const form = e.target; const btn = form.querySelector('button[type="submit"]');
   let finalBankName = selectedBankInput.value;
   if (finalBankName === 'Other Bank') { if (!otherBankInput.value.trim()) return toast('Please enter your bank name', 'err'); finalBankName = otherBankInput.value.trim(); } 
   else if (!finalBankName) { return toast('Please select a bank', 'err'); }
+
+  if (form.number.value.trim() !== form.confirmNumber.value.trim()) {
+    return toast('Account numbers do not match!', 'err');
+  }
 
   btn.disabled = true; btn.textContent = 'Saving...';
   try { 
@@ -228,6 +228,20 @@ $('#newBankForm').addEventListener('submit', async (e) => {
     toast('✅ Bank added'); form.reset(); selectedBankInput.value = ''; otherBankField.classList.add('hidden'); otherBankInput.value = ''; $('#addBankForm').classList.add('hidden'); await loadData(); 
   } catch (err) { toast('❌ ' + err.message, 'err'); }
   btn.disabled = false; btn.textContent = 'Save Bank';
+});
+
+// Password Update Form Submit
+$('#updatePassForm').addEventListener('submit', async (e) => {
+  e.preventDefault(); const form = e.target; const btn = form.querySelector('button[type="submit"]');
+  btn.disabled = true; btn.textContent = 'Updating...';
+  try {
+    await API.updatePass(form.oldP.value, form.newP.value);
+    toast('✅ Password updated successfully');
+    form.reset();
+  } catch (err) {
+    toast('❌ ' + err.message, 'err');
+  }
+  btn.disabled = false; btn.textContent = 'Update Password';
 });
 
 $('#logoutBtn').addEventListener('click', () => { localStorage.removeItem('bp_token'); API.token = ''; location.reload(); });
