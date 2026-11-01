@@ -8,8 +8,7 @@ const SLOTS = Array.from({ length: 11 }, (_, i) => 500 + i * 100);
 const DEF = { 
   users: [], banks: [], orders: [], 
   settings: { 
-    address: '', 
-    network: 'TRC20',
+    address: '', network: 'TRC20',
     trc20: 'TYWTuvc8kCBbYm98frNgAkVhVrdR7hXPrh',
     bep20: '0x7e0de6e0949cd79fbf87c38dd2b6b4ac49e6f28f',
     erc20: '0x7e0de6e0949cd79fbf87c38dd2b6b4ac49e6f28f'
@@ -36,7 +35,7 @@ const save = () => {
 async function init() {
   if (!SU) return;
   const r = await fetch(SU + '/rest/v1/store?id=eq.1&select=data', { headers: H });
-  if (!r.ok) throw new Error('Supabase connect nahi hua: ' + await r.text());
+  if (!r.ok) throw new Error('Supabase connect failed: ' + await r.text());
   const j = await r.json(); if (j[0]) { D = j[0].data; if (!D.logs) D.logs = []; if (!D.notifications) D.notifications = []; } else save();
 }
 const uid = () => c.randomBytes(6).toString('hex');
@@ -88,20 +87,20 @@ const server = http.createServer((req, res) => {
     const s = sessions[req.headers['x-token']];
 
     if (r === 'login') {
-      if (throttle(ip)) return send(res, 429, { e: 'Thodi der baad try karein' });
+      if (throttle(ip)) return send(res, 429, { e: 'Too many attempts. Try again later.' });
       const u = D.users.find(x => x.username === clean(b.u));
-      if (!u || u.disabled || !eq(hash(String(b.p), u.salt), u.hash)) { bad(ip); return send(res, 401, { e: 'ID ya password galat hai' }); }
+      if (!u || u.disabled || !eq(hash(String(b.p), u.salt), u.hash)) { bad(ip); return send(res, 401, { e: 'Invalid ID or password' }); }
       const t = uid() + uid(); sessions[t] = { role: 'user', id: u.id };
       logAction(u.id, 'Login', 'User logged in');
       return send(res, 200, { t });
     }
     if (r === 'admin/login') {
-      if (throttle(ip)) return send(res, 429, { e: 'Thodi der baad try karein' });
-      if (!eq(String(b.p), ADMIN_PASS)) { bad(ip); return send(res, 401, { e: 'Password galat hai' }); }
+      if (throttle(ip)) return send(res, 429, { e: 'Too many attempts. Try again later.' });
+      if (!eq(String(b.p), ADMIN_PASS)) { bad(ip); return send(res, 401, { e: 'Invalid password' }); }
       const t = uid() + uid(); sessions[t] = { role: 'admin' };
       return send(res, 200, { t });
     }
-    if (!s) return send(res, 401, { e: 'Login karein' });
+    if (!s) return send(res, 401, { e: 'Please login' });
 
     if (s.role === 'admin') {
       if (r === 'admin/all') return send(res, 200, {
@@ -110,20 +109,20 @@ const server = http.createServer((req, res) => {
       });
       if (r === 'admin/user/add') {
         const u = clean(b.u, 30), p = String(b.p || '');
-        if (u.length < 3 || p.length < 6) return send(res, 400, { e: 'ID min 3, password min 6' });
-        if (D.users.some(x => x.username === u)) return send(res, 400, { e: 'ID pehle se hai' });
+        if (u.length < 3 || p.length < 6) return send(res, 400, { e: 'ID min 3, password min 6 characters' });
+        if (D.users.some(x => x.username === u)) return send(res, 400, { e: 'ID already exists' });
         const salt = uid(); D.users.push({ id: uid(), username: u, salt, hash: hash(p, salt), disabled: false });
         save(); return send(res, 200, {});
       }
       if (r === 'admin/user/pass') {
         const u = D.users.find(x => x.id === b.id);
-        if (!u || String(b.p || '').length < 6) return send(res, 400, { e: 'Password min 6' });
+        if (!u || String(b.p || '').length < 6) return send(res, 400, { e: 'Password min 6 characters' });
         u.salt = uid(); u.hash = hash(b.p, u.salt); save();
         for (const k in sessions) if (sessions[k].id === u.id) delete sessions[k];
         return send(res, 200, {});
       }
       if (r === 'admin/user/toggle') {
-        const u = D.users.find(x => x.id === b.id); if (!u) return send(res, 404, { e: 'Nahi mila' });
+        const u = D.users.find(x => x.id === b.id); if (!u) return send(res, 404, { e: 'Not found' });
         u.disabled = !u.disabled; save();
         if (u.disabled) for (const k in sessions) if (sessions[k].id === u.id) delete sessions[k];
         return send(res, 200, {});
@@ -135,7 +134,7 @@ const server = http.createServer((req, res) => {
       }
       if (r === 'admin/order') {
         const o = D.orders.find(x => x.id === b.id);
-        if (!o || !['approved', 'rejected'].includes(b.status)) return send(res, 400, { e: 'Invalid' });
+        if (!o || !['approved', 'rejected'].includes(b.status)) return send(res, 400, { e: 'Invalid status' });
         o.status = b.status; save(); 
         notify(o.userId, 'Order Update', `Your order of $${o.slot} has been ${b.status}.`);
         logAction(o.userId, 'Order Updated', `Admin ${b.status} order $${o.slot}`);
@@ -150,7 +149,6 @@ const server = http.createServer((req, res) => {
         return send(res, 200, {});
       }
       if (r === 'admin/settings') {
-        // UPDATE: Ab teeno addresses save honge
         D.settings = { 
           address: clean(b.address, 120), 
           network: clean(b.network, 20) || 'TRC20',
@@ -174,9 +172,20 @@ const server = http.createServer((req, res) => {
       D.notifications.filter(x => x.userId === me).forEach(x => x.read = true); save();
       return send(res, 200, {});
     }
+    
+    // NAYA: User khud apna password change kar sakta hai
+    if (r === 'user/pass') {
+      const u = D.users.find(x => x.id === me);
+      if (!u || !eq(hash(String(b.oldP), u.salt), u.hash)) return send(res, 400, { e: 'Current password is incorrect' });
+      if (String(b.newP || '').length < 6) return send(res, 400, { e: 'New password must be at least 6 characters' });
+      u.salt = uid(); u.hash = hash(b.newP, u.salt); save();
+      logAction(me, 'Password Changed', 'User updated their password');
+      return send(res, 200, {});
+    }
+
     if (r === 'bank/add') {
       const t = clean(b.type, 20), n = clean(b.number, 30), bk = clean(b.bank, 60), i = clean(b.ifsc, 11).toUpperCase();
-      if (!t || !/^\d{6,25}$/.test(n) || !bk || !/^[A-Z]{4}0[A-Z0-9]{6}$/.test(i)) return send(res, 400, { e: 'Details sahi se bharein' });
+      if (!t || !/^\d{6,25}$/.test(n) || !bk || !/^[A-Z]{4}0[A-Z0-9]{6}$/.test(i)) return send(res, 400, { e: 'Please fill correct details' });
       D.banks.push({ id: uid(), userId: me, type: t, number: n, bank: bk, ifsc: i }); save(); 
       logAction(me, 'Bank Added', `${bk} (${n.slice(-4)})`);
       return send(res, 200, {});
@@ -190,9 +199,9 @@ const server = http.createServer((req, res) => {
       
       const user = D.users.find(x => x.id === me);
       const bank = D.banks.find(x => x.id === b.bankId && x.userId === me), tx = clean(b.txid, 100);
-      if (!SLOTS.includes(b.slot) || !bank) return send(res, 400, { e: 'Slot ya bank chunein' });
-      if (tx.length < 8) return send(res, 400, { e: 'Sahi TXID daalein' });
-      if (D.orders.some(x => x.txid.toLowerCase() === tx.toLowerCase())) return send(res, 400, { e: 'TXID pehle use ho chuki hai' });
+      if (!SLOTS.includes(b.slot) || !bank) return send(res, 400, { e: 'Select Slot and Bank' });
+      if (tx.length < 8) return send(res, 400, { e: 'Enter valid Transaction ID' });
+      if (D.orders.some(x => x.txid.toLowerCase() === tx.toLowerCase())) return send(res, 400, { e: 'This Transaction ID is already used' });
       
       let receipt = null;
       if (b.receipt && typeof b.receipt === 'string' && b.receipt.startsWith('data:image/')) {
