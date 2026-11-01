@@ -73,6 +73,14 @@
         <div class="card">
           <div class="card-title">Step 1 — Choose Amount</div>
           <div class="slot-grid" id="slotGrid"></div>
+          
+          <!-- MANUAL USDT INPUT (NAYA) -->
+          <div style="margin-top: 20px; padding: 16px; border: 1px dashed var(--neon); background: rgba(0, 255, 65, 0.05);">
+            <label class="field" style="margin-bottom: 0;">
+              <span style="color: var(--neon); font-family: 'Orbitron';">Or Enter Custom USDT Amount (Min $100)</span>
+              <input type="number" class="input" id="manualAmount" placeholder="e.g. 150" min="100" />
+            </label>
+          </div>
         </div>
         
         <div class="card mt-4">
@@ -129,7 +137,6 @@
               <input type="text" class="input" id="otherBankInput" placeholder="Enter your bank name" />
             </label>
             <label class="field"><span>Account Number</span><input class="input" name="number" id="accNum" placeholder="Account Number" required /></label>
-            <!-- NAYA: Confirm Account Number -->
             <label class="field"><span>Confirm Account Number</span><input class="input" name="confirmNumber" id="confirmAccNum" placeholder="Re-enter Account Number" required /></label>
             <label class="field"><span>IFSC Code</span><input class="input" name="ifsc" placeholder="IFSC Code" required style="text-transform:uppercase;" /></label>
             <div class="row"><button type="submit" class="btn btn-primary">Save Bank</button><button type="button" id="cancelBankBtn" class="btn btn-ghost">Cancel</button></div>
@@ -144,7 +151,6 @@
         </div>
       </section>
 
-      <!-- NAYA: SETTINGS TAB (Password Update) -->
       <section id="tab-settings" class="tab-content hidden">
         <div class="card">
           <div class="card-title">Update Password</div>
@@ -168,4 +174,4 @@
 
   <script src="app.js"></script>
 </body>
-              </html>
+                               </html>
