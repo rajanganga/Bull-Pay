@@ -329,5 +329,81 @@ if ('serviceWorker' in navigator) {
     });
   });
 }
+// ==========================================
+// LIVE ORDER TICKER GENERATOR
+// ==========================================
+const INDIAN_FIRST_NAMES = ["Rahul", "Amit", "Priya", "Sneha", "Vikram", "Rohit", "Anjali", "Karan", "Neha", "Sandeep", "Pooja", "Arjun", "Kavita", "Manish", "Ritu", "Suresh", "Deepak", "Anil", "Jyoti", "Sunil"];
+const INDIAN_LAST_NAMES = ["Sharma", "Verma", "Patel", "Singh", "Gupta", "Reddy", "Kumar", "Jain", "Yadav", "Chauhan", "Mishra", "Joshi", "Das", "Nair", "Pillai", "Mehta", "Agarwal", "Bansal"];
+let usedNamesToday = new Set(); // Taaki same din same name repeat na ho
 
+function generateRandomOrder() {
+  // Unique Name Generate Karein
+  let name = "";
+  let isUnique = false;
+  let loopCount = 0;
+  
+  while (!isUnique && loopCount < 50) {
+    const fName = INDIAN_FIRST_NAMES[Math.floor(Math.random() * INDIAN_FIRST_NAMES.length)];
+    const lName = INDIAN_LAST_NAMES[Math.floor(Math.random() * INDIAN_LAST_NAMES.length)];
+    name = `${fName} ${lName.charAt(0)}.`;
+    
+    if (!usedNamesToday.has(name)) {
+      usedNamesToday.add(name);
+      isUnique = true;
+    }
+    loopCount++;
+  }
+
+  // Random Amount Generate (Minimum 100 USDT)
+  // Hamesha round number aaye jaise 100, 150, 250, 500 etc
+  const amounts = [100, 150, 200, 250, 300, 500, 750, 1000, 1500, 2000];
+  const amount = amounts[Math.floor(Math.random() * amounts.length)];
+  
+  // Rate Calculate (100-500 = 125, 500+ = 125 + Math.floor((amount-500)/100)*1)
+  let rate = 125;
+  if (amount > 500) {
+    rate = 125 + Math.floor((amount - 500) / 100) * 1;
+  }
+
+  // Random ID generate
+  const randomId = "UPI" + Math.floor(100000 + Math.random() * 900000);
+
+  return { name, amount, rate, randomId };
+}
+
+function addTickerItem() {
+  const track = document.getElementById('liveTickerTrack');
+  if (!track) return;
+
+  const order = generateRandomOrder();
+
+  // Ticker Box HTML
+  const item = document.createElement('div');
+  item.className = 'ticker-item';
+  item.innerHTML = `
+    <strong><span><span class="tick-icon">✅</span>${order.name}</span> <span class="amount">$${order.amount}</span></strong>
+    <small>Sold USDT @ ₹${order.rate} • ${order.randomId}</small>
+  `;
+
+  // Agar track me already 20 items hain, toh purane hata do taaki lag na ho
+  if (track.children.length > 20) {
+    track.removeChild(track.firstChild);
+  }
+
+  track.appendChild(item);
+}
+
+// Har 4-8 second me naya order generate karo
+function startTicker() {
+  // Pehle 5 orders turant daal do taaki khali na dikhe
+  for (let i = 0; i < 5; i++) addTickerItem();
+  
+  // Phir random intervals par add hote raho
+  setInterval(() => {
+    addTickerItem();
+  }, Math.floor(Math.random() * 4000) + 4000); // 4 se 8 second ke beech
+}
+
+// Jab app load ho tab ticker start karein
+setTimeout(startTicker, 1000);
 (function boot() { if (API.token) loadData(); else showLogin(); })();
