@@ -183,10 +183,14 @@ const server = http.createServer((req, res) => {
       return send(res, 200, {});
     }
 
-    if (r === 'bank/add') {
-      const t = clean(b.type, 20), n = clean(b.number, 30), bk = clean(b.bank, 60), i = clean(b.ifsc, 11).toUpperCase();
-      if (!t || !/^\d{6,25}$/.test(n) || !bk || !/^[A-Z]{4}0[A-Z0-9]{6}$/.test(i)) return send(res, 400, { e: 'Please fill correct details' });
-      D.banks.push({ id: uid(), userId: me, type: t, number: n, bank: bk, ifsc: i }); save(); 
+        if (r === 'bank/add') {
+      const t = clean(b.type, 20), n = clean(b.number, 30), bk = clean(b.bank, 60), i = clean(b.ifsc, 11).toUpperCase(), h = clean(b.holder, 50);
+      // Holder name min 3 characters ka hona chahiye
+      if (!t || !/^\d{6,25}$/.test(n) || !bk || !/^[A-Z]{4}0[A-Z0-9]{6}$/.test(i) || h.length < 3) {
+        return send(res, 400, { e: 'Please enter valid details including Account Holder Name' });
+      }
+      D.banks.push({ id: uid(), userId: me, type: t, number: n, bank: bk, ifsc: i, holder: h }); 
+      save(); 
       logAction(me, 'Bank Added', `${bk} (${n.slice(-4)})`);
       return send(res, 200, {});
     }
