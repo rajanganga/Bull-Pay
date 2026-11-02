@@ -79,17 +79,32 @@ function renderAll() {
 }
 
 function updateLiveRateCard() {
-  const amountEl = $('#liveRateAmount'); const priceEl = $('#liveRatePrice');
+  const amountEl = $('#liveRateAmount'); 
+  const priceEl = $('#liveRatePrice');
+  const calcSend = $('#calcSend');
+  const calcReceive = $('#calcReceive');
+  const calcRateText = $('#calcRateText');
+  
   if (!amountEl || !priceEl) return;
   
   if (!state.selectedSlot || state.selectedSlot < 100) { 
     amountEl.textContent = '$0'; 
     priceEl.textContent = '₹0/USDT'; 
+    if(calcSend) calcSend.textContent = '0 USDT';
+    if(calcReceive) calcReceive.textContent = '₹0';
+    if(calcRateText) calcRateText.textContent = 'Rate: ₹0/USDT';
   } else { 
     const rate = getRate(state.selectedSlot); 
+    const totalInr = state.selectedSlot * rate;
     amountEl.textContent = `$${state.selectedSlot}`; 
     priceEl.textContent = `₹${rate}/USDT`; 
+    
+    // Calculator Update
+    if(calcSend) calcSend.textContent = `${state.selectedSlot} USDT`;
+    if(calcReceive) calcReceive.textContent = `₹${money(totalInr)}`;
+    if(calcRateText) calcRateText.textContent = `Rate: ₹${rate}/USDT`;
   }
+}
 }
 
 function renderSlots() {
