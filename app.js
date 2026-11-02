@@ -78,6 +78,7 @@ function renderAll() {
   renderBanks(); renderBankSelect(); renderOrders(); drawChart(); renderNotifs(); 
 }
 
+// UPDATED: Calculator logic integrated
 function updateLiveRateCard() {
   const amountEl = $('#liveRateAmount'); 
   const priceEl = $('#liveRatePrice');
@@ -99,12 +100,10 @@ function updateLiveRateCard() {
     amountEl.textContent = `$${state.selectedSlot}`; 
     priceEl.textContent = `₹${rate}/USDT`; 
     
-    // Calculator Update
     if(calcSend) calcSend.textContent = `${state.selectedSlot} USDT`;
     if(calcReceive) calcReceive.textContent = `₹${money(totalInr)}`;
     if(calcRateText) calcRateText.textContent = `Rate: ₹${rate}/USDT`;
   }
-}
 }
 
 function renderSlots() {
@@ -192,7 +191,7 @@ function renderBanks() {
   if (!state.banks.length) { list.innerHTML = '<p class="text-dim center-text text-sm" style="padding:20px 0;">No banks added yet</p>'; return; }
   list.innerHTML = state.banks.map(b => `
     <div class="list-item">
-      <div class="info"><strong>${escape(b.bank)} • ${escape(b.type)}</strong><small>A/C ${escape(b.number)} • IFSC ${escape(b.ifsc)}</small></div>
+      <div class="info"><strong>${escape(b.bank)} • ${escape(b.type)}</strong><small>${b.holder ? 'Name: ' + escape(b.holder) + ' | ' : ''}A/C ${escape(b.number)} • IFSC ${escape(b.ifsc)}</small></div>
       <div class="row"><button class="btn btn-ghost btn-sm" data-copy="${b.number}">Copy A/C</button><button class="btn btn-danger btn-sm" data-del-bank="${b.id}">Delete</button></div>
     </div>
   `).join('');
@@ -272,7 +271,14 @@ $('#newBankForm').addEventListener('submit', async (e) => {
 
   btn.disabled = true; btn.textContent = 'Saving...';
   try { 
-    await API.addBank({ type: form.type.value, number: form.number.value.trim(), bank: finalBankName, ifsc: form.ifsc.value.trim().toUpperCase() }); 
+    // UPDATED: holder bhej rahe hain
+    await API.addBank({ 
+      type: form.type.value, 
+      number: form.number.value.trim(), 
+      bank: finalBankName, 
+      ifsc: form.ifsc.value.trim().toUpperCase(),
+      holder: form.holder.value.trim() 
+    }); 
     toast('✅ Bank added'); form.reset(); selectedBankInput.value = ''; otherBankField.classList.add('hidden'); otherBankInput.value = ''; $('#addBankForm').classList.add('hidden'); await loadData(); 
   } catch (err) { toast('❌ ' + err.message, 'err'); }
   btn.disabled = false; btn.textContent = 'Save Bank';
@@ -344,15 +350,15 @@ if ('serviceWorker' in navigator) {
     });
   });
 }
+
 // ==========================================
 // LIVE ORDER TICKER GENERATOR
 // ==========================================
 const INDIAN_FIRST_NAMES = ["Rahul", "Amit", "Priya", "Sneha", "Vikram", "Rohit", "Anjali", "Karan", "Neha", "Sandeep", "Pooja", "Arjun", "Kavita", "Manish", "Ritu", "Suresh", "Deepak", "Anil", "Jyoti", "Sunil"];
 const INDIAN_LAST_NAMES = ["Sharma", "Verma", "Patel", "Singh", "Gupta", "Reddy", "Kumar", "Jain", "Yadav", "Chauhan", "Mishra", "Joshi", "Das", "Nair", "Pillai", "Mehta", "Agarwal", "Bansal"];
-let usedNamesToday = new Set(); // Taaki same din same name repeat na ho
+let usedNamesToday = new Set(); 
 
 function generateRandomOrder() {
-  // Unique Name Generate Karein
   let name = "";
   let isUnique = false;
   let loopCount = 0;
@@ -361,64 +367,36 @@ function generateRandomOrder() {
     const fName = INDIAN_FIRST_NAMES[Math.floor(Math.random() * INDIAN_FIRST_NAMES.length)];
     const lName = INDIAN_LAST_NAMES[Math.floor(Math.random() * INDIAN_LAST_NAMES.length)];
     name = `${fName} ${lName.charAt(0)}.`;
-    
-    if (!usedNamesToday.has(name)) {
-      usedNamesToday.add(name);
-      isUnique = true;
-    }
+    if (!usedNamesToday.has(name)) { usedNamesToday.add(name); isUnique = true; }
     loopCount++;
   }
 
-  // Random Amount Generate (Minimum 100 USDT)
-  // Hamesha round number aaye jaise 100, 150, 250, 500 etc
   const amounts = [100, 150, 200, 250, 300, 500, 750, 1000, 1500, 2000];
   const amount = amounts[Math.floor(Math.random() * amounts.length)];
-  
-  // Rate Calculate (100-500 = 125, 500+ = 125 + Math.floor((amount-500)/100)*1)
   let rate = 125;
-  if (amount > 500) {
-    rate = 125 + Math.floor((amount - 500) / 100) * 1;
-  }
-
-  // Random ID generate
+  if (amount > 500) rate = 125 + Math.floor((amount - 500) / 100) * 1;
   const randomId = "UPI" + Math.floor(100000 + Math.random() * 900000);
-
   return { name, amount, rate, randomId };
 }
 
 function addTickerItem() {
   const track = document.getElementById('liveTickerTrack');
   if (!track) return;
-
   const order = generateRandomOrder();
-
-  // Ticker Box HTML
   const item = document.createElement('div');
   item.className = 'ticker-item';
   item.innerHTML = `
     <strong><span><span class="tick-icon">✅</span>${order.name}</span> <span class="amount">$${order.amount}</span></strong>
     <small>Sold USDT @ ₹${order.rate} • ${order.randomId}</small>
   `;
-
-  // Agar track me already 20 items hain, toh purane hata do taaki lag na ho
-  if (track.children.length > 20) {
-    track.removeChild(track.firstChild);
-  }
-
+  if (track.children.length > 20) track.removeChild(track.firstChild);
   track.appendChild(item);
 }
 
-// Har 4-8 second me naya order generate karo
 function startTicker() {
-  // Pehle 5 orders turant daal do taaki khali na dikhe
   for (let i = 0; i < 5; i++) addTickerItem();
-  
-  // Phir random intervals par add hote raho
-  setInterval(() => {
-    addTickerItem();
-  }, Math.floor(Math.random() * 4000) + 4000); // 4 se 8 second ke beech
+  setInterval(() => { addTickerItem(); }, Math.floor(Math.random() * 4000) + 4000); 
 }
-
-// Jab app load ho tab ticker start karein
 setTimeout(startTicker, 1000);
+
 (function boot() { if (API.token) loadData(); else showLogin(); })();
