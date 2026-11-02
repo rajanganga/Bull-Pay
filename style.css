@@ -264,3 +264,94 @@ label.field > span { display: block; font-size: 12px; color: var(--neon); text-t
   50% { opacity: 1; transform: scale(1.2); }
   100% { opacity: 0; transform: scale(1.5); }
 }
+/* =========================================
+   LIVE ORDER TICKER (3D Glowing Style)
+   ========================================= */
+.live-ticker-container {
+  background: linear-gradient(90deg, rgba(0,255,65,0.1) 0%, rgba(5,7,10,0.8) 50%, rgba(255,0,60,0.1) 100%);
+  border-top: 1px solid var(--neon);
+  border-bottom: 1px solid var(--neon);
+  padding: 10px 0;
+  margin-bottom: 20px;
+  overflow: hidden;
+  position: relative;
+  box-shadow: 0 0 15px rgba(0, 255, 65, 0.2), inset 0 0 20px rgba(0,255,65,0.1);
+}
+
+.live-ticker-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 11px;
+  color: var(--neon);
+  letter-spacing: 2px;
+  padding: 0 16px;
+  margin-bottom: 8px;
+  font-weight: 700;
+}
+
+.live-ticker-track {
+  display: flex;
+  gap: 12px;
+  white-space: nowrap;
+  animation: scrollTicker 20s linear infinite;
+  padding: 0 16px;
+}
+
+.live-ticker-track:hover {
+  animation-play-state: paused;
+}
+
+@keyframes scrollTicker {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.ticker-item {
+  display: inline-flex;
+  flex-direction: column;
+  background: rgba(0, 255, 65, 0.05);
+  border: 1px solid rgba(0, 255, 65, 0.3);
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 13px;
+  color: var(--text);
+  min-width: 180px;
+  position: relative;
+  /* 3D Glow Blink Animation */
+  animation: blink3D 2s infinite alternate;
+}
+
+@keyframes blink3D {
+  0% { box-shadow: 0 0 5px rgba(0,255,65,0.1), inset 0 0 5px rgba(0,255,65,0.1); border-color: rgba(0,255,65,0.2); }
+  100% { box-shadow: 0 0 15px rgba(0,255,65,0.6), inset 0 0 10px rgba(0,255,65,0.3); border-color: var(--neon); }
+}
+
+.ticker-item strong {
+  color: var(--neon);
+  font-size: 14px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.ticker-item small {
+  color: var(--text-dim);
+  font-size: 11px;
+  margin-top: 2px;
+}
+
+.ticker-item .amount {
+  color: #fff;
+  font-weight: 700;
+  background: rgba(0, 0, 0, 0.4);
+  padding: 2px 6px;
+  border-radius: 2px;
+}
+
+.ticker-item .tick-icon {
+  color: #00FF41;
+  font-size: 12px;
+  margin-right: 4px;
+}
