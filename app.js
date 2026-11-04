@@ -94,21 +94,6 @@ async function loadData() {
 function renderAll() { 
   renderBalance(); renderSlots(); updateLiveRateCard(); renderPaymentAddress(); 
   renderBanks(); renderBankSelect(); renderOrders(); drawChart(); renderNotifs(); 
-  
-  const warnDiv = $('#warningBanner');
-  if (warnDiv) {
-    if (state.settings.warningMsg) {
-      warnDiv.innerHTML = `⚠️ ${state.settings.warningMsg}`;
-      warnDiv.classList.remove('hidden');
-    } else {
-      warnDiv.classList.add('hidden');
-    }
-  }
-
-  const tgLink = $('#telegramLink');
-  if (tgLink) {
-    tgLink.href = `https://t.me/${state.settings.telegramSupport || 'YourTelegramUsername'}`;
-  }
 }
 
 function updateLiveRateCard() {
@@ -400,4 +385,12 @@ function renderNotifs() {
 
 const notifBtn = $('#notifBtn');
 if(notifBtn) {
-  notifBtn.onclick = () =>
+  notifBtn.onclick = () => { const p = $('#notifPanel'); if(p) p.classList.toggle('hidden'); if (!state.notifs.every(n => n.read)) { API.readNotif(); setTimeout(() => loadData(), 500); } };
+}
+
+// AUTO UPDATE PWA LOGIC
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').then(reg => {
+      setInterval(() => { reg.update(); }, 60000);
+      reg.onupdatefound = () =>
