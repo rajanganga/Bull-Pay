@@ -11,16 +11,31 @@ const DEF = {
     address: '', network: 'TRC20',
     trc20: 'TYWTuvc8kCBbYm98frNgAkVhVrdR7hXPrh',
     bep20: '0x7e0de6e0949cd79fbf87c38dd2b6b4ac49e6f28f',
-    erc20: '0x7e0de6e0949cd79fbf87c38dd2b6b4ac49e6f28f'
+    erc20: '0x7e0de6e0949cd79fbf87c38dd2b6b4ac49e6f28f',
+    
+    // MASTER SETTINGS
+    baseRate: 125,       // Default Rate
+    rateStep: 1,         // Rate increment
+    minSell: 100,        // Min Sell Amount
+    isOfferActive: false,// Offer ON/OFF
+    offerRate: 126,      // Special Offer Rate
+    
+    maxBanks: 3,         // Max bank accounts per user
+    telegramSupport: 'YourTelegramUsername', // Telegram Link
+    warningMsg: '',      // Custom Warning Message
+    orderActive: true    // Order Accept ON/OFF
   }, 
   logs: [], notifications: [] 
 };
 let D = fs.existsSync(FILE) ? JSON.parse(fs.readFileSync(FILE, 'utf8')) : DEF;
 if (!D.logs) D.logs = []; 
 if (!D.notifications) D.notifications = []; 
-if (!D.settings.trc20) D.settings.trc20 = 'TYWTuvc8kCBbYm98frNgAkVhVrdR7hXPrh';
-if (!D.settings.bep20) D.settings.bep20 = '0x7e0de6e0949cd79fbf87c38dd2b6b4ac49e6f28f';
-if (!D.settings.erc20) D.settings.erc20 = '0x7e0de6e0949cd79fbf87c38dd2b6b4ac49e6f28f';
+
+// Purane data ke liye nayi settings set karna
+const defaultSet = DEF.settings;
+for (let key in defaultSet) {
+  if (D.settings[key] === undefined) D.settings[key] = defaultSet[key];
+}
 
 const SU = (process.env.SUPABASE_URL || '').replace(/\/$/, ''), SK = process.env.SUPABASE_KEY || '';
 const H = { apikey: SK, 'content-type': 'application/json' };
@@ -66,7 +81,6 @@ function notify(userId, title, msg) {
 const server = http.createServer((req, res) => {
   const url = new URL(req.url, 'http://x');
 
-  // Static files
   if (req.method === 'GET' && (url.pathname.endsWith('.css') || url.pathname.endsWith('.js') || url.pathname.endsWith('.png') || url.pathname.endsWith('.jpg') || url.pathname.endsWith('.ico') || url.pathname.endsWith('.json'))) {
     const ext = path.extname(url.pathname);
     const mime = { '.css': 'text/css', '.js': 'application/javascript', '.png': 'image/png', '.jpg': 'image/jpeg', '.ico': 'image/x-icon', '.json': 'application/json' };
@@ -74,7 +88,6 @@ const server = http.createServer((req, res) => {
     if (fs.existsSync(filePath)) { res.writeHead(200, { 'content-type': mime[ext] || 'text/plain' }); return res.end(fs.readFileSync(filePath)); }
   }
 
-  // Pages Routing
   if (req.method === 'GET' && (url.pathname === '/' || url.pathname === '/app.html')) return page(res, 'app.html');
   if (req.method === 'GET' && (url.pathname === '/admin' || url.pathname === '/admin.html')) return page(res, 'admin.html');
   if (!url.pathname.startsWith('/api/')) return send(res, 404, { e: 'Not found' });
@@ -87,7 +100,7 @@ const server = http.createServer((req, res) => {
     const s = sessions[req.headers['x-token']];
 
     if (r === 'login') {
-      if (throttle(ip)) return send(res, 429, { e: 'Too many attempts. Try again later.' });
+      if (throttle(ip)) return send(res, 429, { e: 'Too many attempts' });
       const u = D.users.find(x => x.username === clean(b.u));
       if (!u || u.disabled || !eq(hash(String(b.p), u.salt), u.hash)) { bad(ip); return send(res, 401, { e: 'Invalid ID or password' }); }
       const t = uid() + uid(); sessions[t] = { role: 'user', id: u.id };
@@ -95,7 +108,7 @@ const server = http.createServer((req, res) => {
       return send(res, 200, { t });
     }
     if (r === 'admin/login') {
-      if (throttle(ip)) return send(res, 429, { e: 'Too many attempts. Try again later.' });
+      if (throttle(ip)) return send(res, 429, { e: 'Too many attempts' });
       if (!eq(String(b.p), ADMIN_PASS)) { bad(ip); return send(res, 401, { e: 'Invalid password' }); }
       const t = uid() + uid(); sessions[t] = { role: 'admin' };
       return send(res, 200, { t });
@@ -109,14 +122,14 @@ const server = http.createServer((req, res) => {
       });
       if (r === 'admin/user/add') {
         const u = clean(b.u, 30), p = String(b.p || '');
-        if (u.length < 3 || p.length < 6) return send(res, 400, { e: 'ID min 3, password min 6 characters' });
+        if (u.length < 3 || p.length < 6) return send(res, 400, { e: 'ID min 3, password min 6' });
         if (D.users.some(x => x.username === u)) return send(res, 400, { e: 'ID already exists' });
         const salt = uid(); D.users.push({ id: uid(), username: u, salt, hash: hash(p, salt), disabled: false });
         save(); return send(res, 200, {});
       }
       if (r === 'admin/user/pass') {
         const u = D.users.find(x => x.id === b.id);
-        if (!u || String(b.p || '').length < 6) return send(res, 400, { e: 'Password min 6 characters' });
+        if (!u || String(b.p || '').length < 6) return send(res, 400, { e: 'Password min 6' });
         u.salt = uid(); u.hash = hash(b.p, u.salt); save();
         for (const k in sessions) if (sessions[k].id === u.id) delete sessions[k];
         return send(res, 200, {});
@@ -144,17 +157,29 @@ const server = http.createServer((req, res) => {
         const o = D.orders.find(x => x.id === b.id);
         if (!o) return send(res, 404, { e: 'Order not found' });
         D.orders = D.orders.filter(x => x.id !== b.id); save();
-        notify(o.userId, 'Order Deleted', `Your order of $${o.slot} has been removed by admin.`);
+        notify(o.userId, 'Order Deleted', `Your order of $${o.slot} has been removed.`);
         logAction(o.userId, 'Order Deleted', `Admin deleted order $${o.slot}`);
         return send(res, 200, {});
       }
       if (r === 'admin/settings') {
         D.settings = { 
+          ...D.settings,
           address: clean(b.address, 120), 
           network: clean(b.network, 20) || 'TRC20',
           trc20: clean(b.trc20, 120) || D.settings.trc20,
           bep20: clean(b.bep20, 120) || D.settings.bep20,
-          erc20: clean(b.erc20, 120) || D.settings.erc20
+          erc20: clean(b.erc20, 120) || D.settings.erc20,
+          
+          baseRate: Number(b.baseRate) || 125,
+          rateStep: Number(b.rateStep) || 1,
+          minSell: Number(b.minSell) || 100,
+          isOfferActive: b.isOfferActive === true || b.isOfferActive === 'true',
+          offerRate: Number(b.offerRate) || 126,
+          
+          maxBanks: Number(b.maxBanks) || 3,
+          telegramSupport: clean(b.telegramSupport, 50) || 'YourTelegramUsername',
+          warningMsg: clean(b.warningMsg, 200) || '',
+          orderActive: b.orderActive === true || b.orderActive === 'true'
         };
         save(); return send(res, 200, {});
       }
@@ -172,38 +197,42 @@ const server = http.createServer((req, res) => {
       D.notifications.filter(x => x.userId === me).forEach(x => x.read = true); save();
       return send(res, 200, {});
     }
-    
-    // NAYA: User khud apna password change kar sakta hai
     if (r === 'user/pass') {
       const u = D.users.find(x => x.id === me);
       if (!u || !eq(hash(String(b.oldP), u.salt), u.hash)) return send(res, 400, { e: 'Current password is incorrect' });
       if (String(b.newP || '').length < 6) return send(res, 400, { e: 'New password must be at least 6 characters' });
       u.salt = uid(); u.hash = hash(b.newP, u.salt); save();
-      logAction(me, 'Password Changed', 'User updated their password');
+      logAction(me, 'Password Changed', 'User updated password');
       return send(res, 200, {});
     }
-
-        if (r === 'bank/add') {
-      const t = clean(b.type, 20), n = clean(b.number, 30), bk = clean(b.bank, 60), i = clean(b.ifsc, 11).toUpperCase(), h = clean(b.holder, 50);
-      // Holder name min 3 characters ka hona chahiye
-      if (!t || !/^\d{6,25}$/.test(n) || !bk || !/^[A-Z]{4}0[A-Z0-9]{6}$/.test(i) || h.length < 3) {
-        return send(res, 400, { e: 'Please enter valid details including Account Holder Name' });
+    if (r === 'bank/add') {
+      // Check Max Banks Limit
+      const currentBanks = D.banks.filter(x => x.userId === me);
+      if (currentBanks.length >= (D.settings.maxBanks || 3)) {
+        return send(res, 400, { e: `You can only add up to ${D.settings.maxBanks} bank accounts.` });
       }
-      D.banks.push({ id: uid(), userId: me, type: t, number: n, bank: bk, ifsc: i, holder: h }); 
-      save(); 
+
+      const t = clean(b.type, 20), n = clean(b.number, 30), bk = clean(b.bank, 60), i = clean(b.ifsc, 11).toUpperCase(), h = clean(b.holder, 50);
+      if (!t || !/^\d{6,25}$/.test(n) || !bk || !/^[A-Z]{4}0[A-Z0-9]{6}$/.test(i) || h.length < 3) {
+        return send(res, 400, { e: 'Please fill valid details' });
+      }
+      D.banks.push({ id: uid(), userId: me, type: t, number: n, bank: bk, ifsc: i, holder: h }); save(); 
       logAction(me, 'Bank Added', `${bk} (${n.slice(-4)})`);
       return send(res, 200, {});
     }
     if (r === 'bank/del') { D.banks = D.banks.filter(x => !(x.id === b.id && x.userId === me)); save(); logAction(me, 'Bank Deleted', `ID: ${b.id}`); return send(res, 200, {}); }
     
     if (r === 'order') {
+      if (!D.settings.orderActive) return send(res, 400, { e: 'Orders are temporarily closed by Admin.' });
+
       orderRate[me] = orderRate[me] || { n: 0, t: Date.now() };
       if (Date.now() - orderRate[me].t > 60000) orderRate[me] = { n: 0, t: Date.now() };
       if (orderRate[me].n >= 5) return send(res, 429, { e: 'Too many orders. Wait a minute.' });
       
       const user = D.users.find(x => x.id === me);
       const bank = D.banks.find(x => x.id === b.bankId && x.userId === me), tx = clean(b.txid, 100);
-      if (!SLOTS.includes(b.slot) || !bank) return send(res, 400, { e: 'Select Slot and Bank' });
+      if (!bank) return send(res, 400, { e: 'Select valid bank' });
+      if (b.slot < (D.settings.minSell || 100)) return send(res, 400, { e: `Minimum sell is $${D.settings.minSell}` });
       if (tx.length < 8) return send(res, 400, { e: 'Enter valid Transaction ID' });
       if (D.orders.some(x => x.txid.toLowerCase() === tx.toLowerCase())) return send(res, 400, { e: 'This Transaction ID is already used' });
       
