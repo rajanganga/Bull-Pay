@@ -21,25 +21,6 @@ const state = { slots: [], settings: {}, banks: [], orders: [], notifs: [], sele
 const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => document.querySelectorAll(sel);
 
-const INDIAN_BANKS = [
-  { name: "State Bank of India (SBI)", domain: "sbi.co.in" }, { name: "HDFC Bank", domain: "hdfcbank.com" },
-  { name: "ICICI Bank", domain: "icicibank.com" }, { name: "Axis Bank", domain: "axisbank.com" },
-  { name: "Kotak Mahindra Bank", domain: "kotak.com" }, { name: "Punjab National Bank (PNB)", domain: "pnbindia.in" },
-  { name: "Bank of Baroda", domain: "bankofbaroda.in" }, { name: "Canara Bank", domain: "canarabank.com" },
-  { name: "Union Bank of India", domain: "unionbankofindia.co.in" }, { name: "IndusInd Bank", domain: "indusind.com" },
-  { name: "Yes Bank", domain: "yesbank.in" }, { name: "IDFC First Bank", domain: "idfcfirstbank.com" },
-  { name: "Bank of India", domain: "bankofindia.co.in" }, { name: "Central Bank of India", domain: "centralbankofindia.co.in" },
-  { name: "Indian Bank", domain: "indianbank.in" }, { name: "Indian Overseas Bank", domain: "iob.in" },
-  { name: "UCO Bank", domain: "ucobank.com" }, { name: "Bank of Maharashtra", domain: "bankofmaharashtra.in" },
-  { name: "Punjab & Sind Bank", domain: "psbindia.com" }, { name: "Federal Bank", domain: "federalbank.co.in" },
-  { name: "Other Bank", domain: "generic" }
-].sort((a, b) => { if (a.name === "Other Bank") return 1; if (b.name === "Other Bank") return -1; return a.name.localeCompare(b.name); });
-
-function getBankLogo(domain) {
-  if (domain === "generic") return "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0Ij48cGF0aCBmaWxsPSIjQjVGRjRBIiBkPSJNMTIgMkM2LjQ4IDIgMiA2LjQ4IDIgMTJzNC40OCAxMCAxMCAxMCAxMC00LjQ4IDEwLTEwUzE3LjUyIDIgMTIgMnptMCAxOGMtNC40MSAwLTgtMy41OS04LThzMy41OS04IDgtOCA4IDMuNTkgOCA4LTQuNDEgOC04IDh6Ii8+PC9zdmc+";
-  return `https://logo.clearbit.com/${domain}`;
-}
-
 function toast(msg, type = 'ok') { 
   const el = document.createElement('div'); 
   el.className = 'toast ' + type; 
@@ -60,36 +41,31 @@ function getRate(amount) {
   return base + Math.floor((amount - 500) / 100) * step;
 }
 
-// INITIAL LOAD LOGIC
-window.addEventListener('DOMContentLoaded', () => {
+// INITIAL LOAD LOGIC (Sabse simple aur safe)
+window.addEventListener('load', () => {
   const loader = document.getElementById('loadingScreen');
-  const login = document.getElementById('loginScreen');
-  const main = document.getElementById('mainApp');
-
-  if (loader) loader.style.display = 'none';
+  if(loader) loader.classList.add('hidden');
   
   if (API.token) {
-    // Token hai, toh seedha load karo
     loadData().catch(() => {
-      if (login) login.style.display = 'flex';
-      if (main) main.style.display = 'none';
+      const login = document.getElementById('loginScreen');
+      if(login) login.classList.remove('hidden');
     });
   } else {
-    // Token nahi hai, toh login screen dikhao
-    if (login) login.style.display = 'flex';
-    if (main) main.style.display = 'none';
+    const login = document.getElementById('loginScreen');
+    if(login) login.classList.remove('hidden');
   }
 });
 
 function showLogin() { 
-  const l = $('#loadingScreen'); if(l) l.style.display = 'none'; 
-  const li = $('#loginScreen'); if(li) li.style.display = 'flex'; 
-  const m = $('#mainApp'); if(m) m.style.display = 'none'; 
+  const l = $('#loadingScreen'); if(l) l.classList.add('hidden'); 
+  const li = $('#loginScreen'); if(li) li.classList.remove('hidden'); 
+  const m = $('#mainApp'); if(m) m.classList.add('hidden'); 
 }
 function showMain() { 
-  const l = $('#loadingScreen'); if(l) l.style.display = 'none'; 
-  const li = $('#loginScreen'); if(li) li.style.display = 'none'; 
-  const m = $('#mainApp'); if(m) m.style.display = 'block'; 
+  const l = $('#loadingScreen'); if(l) l.classList.add('hidden'); 
+  const li = $('#loginScreen'); if(li) li.classList.add('hidden'); 
+  const m = $('#mainApp'); if(m) m.classList.remove('hidden'); 
 }
 
 const loginForm = $('#loginForm');
@@ -406,4 +382,31 @@ function renderNotifs() {
     list.innerHTML = state.notifs.length ? state.notifs.map(n => `
       <div style="padding:10px 0; border-bottom:1px solid var(--border-soft); opacity:${n.read ? '0.6' : '1'};">
         <strong style="font-size:13px; display:block; color:var(--neon); font-family:'Orbitron';">${escape(n.title)}</strong>
-        <span style="font-size:12px; color:var(--text-di
+        <span style="font-size:12px; color:var(--text-dim);">${escape(n.msg)}</span>
+      </div>
+    `).join('') : '<p class="text-dim text-sm text-center" style="padding:10px;">No notifications</p>';
+  }
+}
+
+const notifBtn = $('#notifBtn');
+if(notifBtn) {
+  notifBtn.onclick = () => { const p = $('#notifPanel'); if(p) p.classList.toggle('hidden'); if (!state.notifs.every(n => n.read)) { API.readNotif(); setTimeout(() => loadData(), 500); } };
+}
+
+// AUTO UPDATE PWA LOGIC
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').then(reg => {
+      setInterval(() => { reg.update(); }, 60000);
+      reg.onupdatefound = () => {
+        const installingWorker = reg.installing;
+        installingWorker.onstatechange = () => {
+          if (installingWorker.state === 'installed' && navigator.serviceWorker.controller) {
+            toast('✨ New update available! Reloading...');
+            setTimeout(() => window.location.reload(), 2000);
+          }
+        };
+      };
+    }).catch(e => console.log('SW Error:', e));
+  });
+    }
