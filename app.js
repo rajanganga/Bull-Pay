@@ -17,7 +17,7 @@ const API = {
   updatePass: (oldP, newP) => API.req('user/pass', { oldP, newP }) 
 };
 
-const state = { slots: [], settings: {}, banks: [], orders: [], notifs: [], selectedSlot: null, selectedNetwork: null };
+const state = { slots: [], settings: {}, banks: [], orders: [], notifs: [], selectedSlot: null };
 const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => document.querySelectorAll(sel);
 
@@ -55,7 +55,6 @@ function getRate(amount) {
   const isOffer = state.settings.isOfferActive;
   const base = isOffer ? (state.settings.offerRate || 126) : (state.settings.baseRate || 125);
   const step = state.settings.rateStep || 1;
-  
   if (!amount || amount < (state.settings.minSell || 100)) return 0;
   if (amount <= 500) return base;
   return base + Math.floor((amount - 500) / 100) * step;
@@ -129,7 +128,6 @@ function updateLiveRateCard() {
     const totalInr = state.selectedSlot * rate;
     amountEl.textContent = `$${state.selectedSlot}`; 
     priceEl.textContent = `₹${rate}/USDT`; 
-    
     if(calcSend) calcSend.textContent = `${state.selectedSlot} USDT`;
     if(calcReceive) calcReceive.textContent = `₹${money(totalInr)}`;
     if(calcRateText) calcRateText.textContent = `Rate: ₹${rate}/USDT`;
@@ -400,7 +398,5 @@ if(notifBtn) {
   notifBtn.onclick = () => { $('#notifPanel').classList.toggle('hidden'); if (!state.notifs.every(n => n.read)) { API.readNotif(); setTimeout(() => loadData(), 500); } };
 }
 
-// AUTO UPDATE PWA LOGIC
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register
+// LIVE ORDER TICKER GENERATOR
+const INDIAN_FIRST_NAMES = ["Rahul", "Amit", "Priya", "Sneha", "Vikram", "Rohit", "Anjali", "Karan", "Neha", "Sandeep", "Pooja", "Arjun", "
