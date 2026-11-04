@@ -13,11 +13,15 @@
   <div class="bg-orbs"></div>
   <div class="toast-wrap" id="toastWrap"></div>
 
+  <!-- LOADING SCREEN -->
   <div id="loadingScreen" class="loading-screen"><div class="spinner"></div></div>
 
+  <!-- LOGIN SCREEN -->
   <div id="loginScreen" class="auth-screen hidden fade-in">
     <div class="auth-card glass">
-      <div class="brand center-text" style="justify-content:center; margin-bottom:20px;"><span class="brand-icon">⚡</span><span>Bull<span class="brand-accent">Pay</span></span></div>
+      <div class="brand center-text" style="justify-content:center; margin-bottom:20px;">
+        <span class="brand-icon">⚡</span><span>Bull<span class="brand-accent">Pay</span></span>
+      </div>
       <h1>Welcome <span class="text-neon">back</span></h1>
       <form id="loginForm">
         <label class="field"><span>User ID</span><input class="input" name="u" placeholder="Enter Username" required /></label>
@@ -28,6 +32,7 @@
     </div>
   </div>
 
+  <!-- MAIN APP SCREEN -->
   <div id="mainApp" class="hidden fade-in">
     <header class="app-header">
       <div class="container">
@@ -39,17 +44,17 @@
       </div>
     </header>
 
-    <!-- LIVE ORDER TICKER START -->
+    <!-- LIVE ORDER TICKER (Naya) -->
     <div class="live-ticker-container">
       <div class="live-ticker-header">
         <span class="live-dot"></span> LIVE TRANSACTIONS
       </div>
       <div class="live-ticker-track" id="liveTickerTrack"></div>
     </div>
-    <!-- LIVE ORDER TICKER END -->
 
     <main class="container" style="padding-top:20px; padding-bottom:60px;">
       
+      <!-- NOTIFICATIONS PANEL -->
       <div id="notifPanel" class="card glass hidden" style="position:absolute; right:20px; top:70px; z-index:100; width:300px; max-height:400px; overflow-y:auto;">
         <div class="card-title">Notifications</div>
         <div id="notifList"></div>
@@ -58,11 +63,13 @@
       <!-- WARNING BANNER (Naya) -->
       <div id="warningBanner" class="hidden" style="background:rgba(255,0,60,0.1); border:1px solid var(--danger); color:var(--danger); padding:12px; border-radius:4px; margin-bottom:16px; font-weight:600; text-align:center;"></div>
 
+      <!-- LIVE RATE CARD -->
       <div class="rate-card">
         <div><small>Selected Order</small><p class="amount" id="liveRateAmount">$0</p></div>
         <div><small>Live Rate</small><p class="price" id="liveRatePrice">₹0/USDT</p></div>
       </div>
 
+      <!-- BALANCE OVERVIEW -->
       <div class="card balance-card">
         <div class="balance-label">Wallet Overview <span class="live-dot"></span></div>
         <div class="balance-amount"><span class="cur">$</span><span id="totalDeposits">0</span></div>
@@ -74,6 +81,7 @@
         <canvas id="walletChart" width="400" height="100" style="width:100%; height:120px; margin-top:15px;"></canvas>
       </div>
 
+      <!-- TABS -->
       <div class="tabs" style="margin-top:24px;">
         <button class="tab active" data-tab="deposit">💳 Deposit</button>
         <button class="tab" data-tab="banks">🏦 Banks</button>
@@ -81,6 +89,7 @@
         <button class="tab" data-tab="settings">⚙️ Settings</button>
       </div>
 
+      <!-- TAB: DEPOSIT -->
       <section id="tab-deposit" class="tab-content">
         <div class="card">
           <div class="card-title">Step 1 — Choose Amount</div>
@@ -111,6 +120,7 @@
           <div style="margin-top:10px; font-size:12px; color:var(--text-dim); text-align:center;" id="calcRateText">Rate: ₹0/USDT</div>
         </div>
         
+        <!-- PAYMENT ADDRESS -->
         <div class="card mt-4">
           <div class="card-title">Step 2 — Send Payment To</div>
           <label class="field">
@@ -132,6 +142,7 @@
           </div>
         </div>
 
+        <!-- SUBMIT FORM -->
         <div class="card mt-4">
           <div class="card-title">Step 3 — Submit Details</div>
           <form id="orderForm">
@@ -143,6 +154,7 @@
         </div>
       </section>
 
+      <!-- TAB: BANKS -->
       <section id="tab-banks" class="tab-content hidden">
         <div class="card">
           <div class="card-title"><span>Your Bank Accounts</span><button id="addBankBtn" class="btn btn-primary btn-sm">+ Add</button></div>
@@ -175,6 +187,7 @@
         </div>
       </section>
 
+      <!-- TAB: ORDERS -->
       <section id="tab-orders" class="tab-content hidden">
         <div class="card">
           <div class="card-title">Order History</div>
@@ -182,6 +195,7 @@
         </div>
       </section>
 
+      <!-- TAB: SETTINGS -->
       <section id="tab-settings" class="tab-content hidden">
         <div class="card">
           <div class="card-title">Update Password</div>
@@ -196,6 +210,7 @@
     </main>
   </div>
 
+  <!-- HELP BUTTON -->
   <button class="help-btn" id="helpBtn" aria-label="Help">💬</button>
   <div class="help-menu" id="helpMenu">
     <div style="font-size:12px; font-weight:700; color:var(--text-dim); text-transform:uppercase; margin-bottom:4px; padding-left:5px; font-family:'Orbitron';">24x7 Support</div>
