@@ -13,11 +13,15 @@
   <div class="bg-orbs"></div>
   <div class="toast-wrap" id="toastWrap"></div>
 
+  <!-- LOADING SCREEN (Sirf 1 second ke liye) -->
   <div id="loadingScreen" class="loading-screen"><div class="spinner"></div></div>
 
-  <div id="loginScreen" class="auth-screen hidden fade-in">
+  <!-- LOGIN SCREEN (By default Visible) -->
+  <div id="loginScreen" class="auth-screen fade-in" style="display: none;">
     <div class="auth-card glass">
-      <div class="brand center-text" style="justify-content:center; margin-bottom:20px;"><span class="brand-icon">⚡</span><span>Bull<span class="brand-accent">Pay</span></span></div>
+      <div class="brand center-text" style="justify-content:center; margin-bottom:20px;">
+        <span class="brand-icon">⚡</span><span>Bull<span class="brand-accent">Pay</span></span>
+      </div>
       <h1>Welcome <span class="text-neon">back</span></h1>
       <form id="loginForm">
         <label class="field"><span>User ID</span><input class="input" name="u" placeholder="Enter Username" required /></label>
@@ -28,7 +32,8 @@
     </div>
   </div>
 
-  <div id="mainApp" class="hidden fade-in">
+  <!-- MAIN APP (By default Hidden) -->
+  <div id="mainApp" style="display: none;">
     <header class="app-header">
       <div class="container">
         <div class="brand"><span class="brand-icon">⚡</span><span>Bull<span class="brand-accent">Pay</span></span></div>
@@ -137,9 +142,7 @@
           <div class="card-title">Add New Bank</div>
           <form id="newBankForm">
             <label class="field"><span>Account Type</span><select class="input" name="type" required><option value="Savings">Savings</option><option value="Current">Current</option></select></label>
-            
             <label class="field"><span>Account Holder Name</span><input class="input" name="holder" placeholder="As per bank records" required /></label>
-            
             <label class="field">
               <span>Bank Name</span>
               <div class="bank-select-wrapper">
@@ -148,10 +151,7 @@
                 <div class="bank-dropdown" id="bankDropdown"></div>
               </div>
             </label>
-            <label class="field hidden" id="otherBankField">
-              <span>Type Bank Name</span>
-              <input type="text" class="input" id="otherBankInput" placeholder="Enter your bank name" />
-            </label>
+            <label class="field hidden" id="otherBankField"><span>Type Bank Name</span><input type="text" class="input" id="otherBankInput" placeholder="Enter your bank name" /></label>
             <label class="field"><span>Account Number</span><input class="input" name="number" id="accNum" placeholder="Account Number" required /></label>
             <label class="field"><span>Confirm Account Number</span><input class="input" name="confirmNumber" id="confirmAccNum" placeholder="Re-enter Account Number" required /></label>
             <label class="field"><span>IFSC Code</span><input class="input" name="ifsc" placeholder="IFSC Code" required style="text-transform:uppercase;" /></label>
@@ -190,4 +190,4 @@
 
   <script src="app.js"></script>
 </body>
-  </html>
+</html>
