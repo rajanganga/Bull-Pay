@@ -13,11 +13,11 @@
   <div class="bg-orbs"></div>
   <div class="toast-wrap" id="toastWrap"></div>
 
-  <!-- LOADING SCREEN (Sirf 1 second ke liye) -->
+  <!-- LOADING SCREEN (Jab tak data load nahi hota) -->
   <div id="loadingScreen" class="loading-screen"><div class="spinner"></div></div>
 
-  <!-- LOGIN SCREEN (By default Visible) -->
-  <div id="loginScreen" class="auth-screen fade-in" style="display: none;">
+  <!-- LOGIN SCREEN -->
+  <div id="loginScreen" class="auth-screen hidden fade-in">
     <div class="auth-card glass">
       <div class="brand center-text" style="justify-content:center; margin-bottom:20px;">
         <span class="brand-icon">⚡</span><span>Bull<span class="brand-accent">Pay</span></span>
@@ -32,8 +32,8 @@
     </div>
   </div>
 
-  <!-- MAIN APP (By default Hidden) -->
-  <div id="mainApp" style="display: none;">
+  <!-- MAIN APP SCREEN -->
+  <div id="mainApp" class="hidden fade-in">
     <header class="app-header">
       <div class="container">
         <div class="brand"><span class="brand-icon">⚡</span><span>Bull<span class="brand-accent">Pay</span></span></div>
