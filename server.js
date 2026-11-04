@@ -1,4 +1,3 @@
-// BullPay server - Node 18+
 const http = require('http'), fs = require('fs'), c = require('crypto'), path = require('path');
 const FILE = path.join(process.env.DATA_DIR || __dirname, 'data.json');
 const ADMIN_PASS = process.env.ADMIN_PASS || 'admin123';
@@ -12,18 +11,11 @@ const DEF = {
     trc20: 'TYWTuvc8kCBbYm98frNgAkVhVrdR7hXPrh',
     bep20: '0x7e0de6e0949cd79fbf87c38dd2b6b4ac49e6f28f',
     erc20: '0x7e0de6e0949cd79fbf87c38dd2b6b4ac49e6f28f',
-    
-    // MASTER SETTINGS
-    baseRate: 125,       // Default Rate
-    rateStep: 1,         // Rate increment
-    minSell: 100,        // Min Sell Amount
-    isOfferActive: false,// Offer ON/OFF
-    offerRate: 126,      // Special Offer Rate
-    
-    maxBanks: 3,         // Max bank accounts per user
-    telegramSupport: 'YourTelegramUsername', // Telegram Link
-    warningMsg: '',      // Custom Warning Message
-    orderActive: true    // Order Accept ON/OFF
+    baseRate: 125,      
+    rateStep: 1,        
+    minSell: 100,       
+    offerRate: 126,
+    isOfferActive: false
   }, 
   logs: [], notifications: [] 
 };
@@ -31,7 +23,6 @@ let D = fs.existsSync(FILE) ? JSON.parse(fs.readFileSync(FILE, 'utf8')) : DEF;
 if (!D.logs) D.logs = []; 
 if (!D.notifications) D.notifications = []; 
 
-// Purane data ke liye nayi settings set karna
 const defaultSet = DEF.settings;
 for (let key in defaultSet) {
   if (D.settings[key] === undefined) D.settings[key] = defaultSet[key];
@@ -169,17 +160,11 @@ const server = http.createServer((req, res) => {
           trc20: clean(b.trc20, 120) || D.settings.trc20,
           bep20: clean(b.bep20, 120) || D.settings.bep20,
           erc20: clean(b.erc20, 120) || D.settings.erc20,
-          
           baseRate: Number(b.baseRate) || 125,
           rateStep: Number(b.rateStep) || 1,
           minSell: Number(b.minSell) || 100,
-          isOfferActive: b.isOfferActive === true || b.isOfferActive === 'true',
           offerRate: Number(b.offerRate) || 126,
-          
-          maxBanks: Number(b.maxBanks) || 3,
-          telegramSupport: clean(b.telegramSupport, 50) || 'YourTelegramUsername',
-          warningMsg: clean(b.warningMsg, 200) || '',
-          orderActive: b.orderActive === true || b.orderActive === 'true'
+          isOfferActive: b.isOfferActive === true || b.isOfferActive === 'true'
         };
         save(); return send(res, 200, {});
       }
@@ -206,12 +191,6 @@ const server = http.createServer((req, res) => {
       return send(res, 200, {});
     }
     if (r === 'bank/add') {
-      // Check Max Banks Limit
-      const currentBanks = D.banks.filter(x => x.userId === me);
-      if (currentBanks.length >= (D.settings.maxBanks || 3)) {
-        return send(res, 400, { e: `You can only add up to ${D.settings.maxBanks} bank accounts.` });
-      }
-
       const t = clean(b.type, 20), n = clean(b.number, 30), bk = clean(b.bank, 60), i = clean(b.ifsc, 11).toUpperCase(), h = clean(b.holder, 50);
       if (!t || !/^\d{6,25}$/.test(n) || !bk || !/^[A-Z]{4}0[A-Z0-9]{6}$/.test(i) || h.length < 3) {
         return send(res, 400, { e: 'Please fill valid details' });
@@ -223,8 +202,6 @@ const server = http.createServer((req, res) => {
     if (r === 'bank/del') { D.banks = D.banks.filter(x => !(x.id === b.id && x.userId === me)); save(); logAction(me, 'Bank Deleted', `ID: ${b.id}`); return send(res, 200, {}); }
     
     if (r === 'order') {
-      if (!D.settings.orderActive) return send(res, 400, { e: 'Orders are temporarily closed by Admin.' });
-
       orderRate[me] = orderRate[me] || { n: 0, t: Date.now() };
       if (Date.now() - orderRate[me].t > 60000) orderRate[me] = { n: 0, t: Date.now() };
       if (orderRate[me].n >= 5) return send(res, 429, { e: 'Too many orders. Wait a minute.' });
