@@ -60,20 +60,23 @@ function getRate(amount) {
   return base + Math.floor((amount - 500) / 100) * step;
 }
 
-function showLogin() { $('#loadingScreen').classList.add('hidden'); $('#loginScreen').classList.remove('hidden'); $('#mainApp').classList.add('hidden'); }
-function showMain() { $('#loadingScreen').classList.add('hidden'); $('#loginScreen').classList.add('hidden'); $('#mainApp').classList.remove('hidden'); }
+function showLogin() { const l = $('#loadingScreen'); if(l) l.classList.add('hidden'); const li = $('#loginScreen'); if(li) li.classList.remove('hidden'); const m = $('#mainApp'); if(m) m.classList.add('hidden'); }
+function showMain() { const l = $('#loadingScreen'); if(l) l.classList.add('hidden'); const li = $('#loginScreen'); if(li) li.classList.add('hidden'); const m = $('#mainApp'); if(m) m.classList.remove('hidden'); }
 
-$('#loginForm').addEventListener('submit', async (e) => {
-  e.preventDefault(); 
-  const btn = e.target.querySelector('button[type="submit"]');
-  btn.disabled = true; btn.textContent = 'Authenticating...';
-  try { 
-    const { t } = await API.login(e.target.u.value.trim(), e.target.p.value); 
-    API.token = t; localStorage.setItem('bp_token', t); toast('✅ Login successful'); await loadData(); 
-  } catch (err) { 
-    toast('❌ ' + err.message, 'err'); btn.disabled = false; btn.textContent = 'Login →'; 
-  }
-});
+const loginForm = $('#loginForm');
+if (loginForm) {
+  loginForm.addEventListener('submit', async (e) => {
+    e.preventDefault(); 
+    const btn = e.target.querySelector('button[type="submit"]');
+    btn.disabled = true; btn.textContent = 'Authenticating...';
+    try { 
+      const { t } = await API.login(e.target.u.value.trim(), e.target.p.value); 
+      API.token = t; localStorage.setItem('bp_token', t); toast('✅ Login successful'); await loadData(); 
+    } catch (err) { 
+      toast('❌ ' + err.message, 'err'); btn.disabled = false; btn.textContent = 'Login →'; 
+    }
+  });
+}
 
 async function loadData() {
   try {
@@ -172,9 +175,10 @@ if (manualInput) {
 
 function renderBalance() {
   const total = state.orders.filter(o => o.status === 'approved').reduce((s, o) => s + Number(o.slot || 0), 0);
-  $('#totalDeposits').textContent = money(total); $('#orderCount').textContent = state.orders.length;
-  $('#approvedCount').textContent = state.orders.filter(o => o.status === 'approved').length;
-  $('#pendingCount').textContent = state.orders.filter(o => o.status === 'pending').length;
+  const td = $('#totalDeposits'); if(td) td.textContent = money(total); 
+  const oc = $('#orderCount'); if(oc) oc.textContent = state.orders.length;
+  const ac = $('#approvedCount'); if(ac) ac.textContent = state.orders.filter(o => o.status === 'approved').length;
+  const pc = $('#pendingCount'); if(pc) pc.textContent = state.orders.filter(o => o.status === 'pending').length;
 }
 
 function drawChart() {
@@ -357,7 +361,8 @@ if(logoutBtn) logoutBtn.addEventListener('click', () => { localStorage.removeIte
 
 $$('.tab').forEach(tab => tab.addEventListener('click', () => {
   $$('.tab').forEach(t => t.classList.remove('active')); tab.classList.add('active');
-  $$('.tab-content').forEach(c => c.classList.add('hidden')); $('#tab-' + tab.dataset.tab).classList.remove('hidden');
+  $$('.tab-content').forEach(c => c.classList.add('hidden')); 
+  const target = $('#tab-' + tab.dataset.tab); if(target) target.classList.remove('hidden');
 }));
 
 function renderOrders() {
@@ -395,8 +400,4 @@ function renderNotifs() {
 
 const notifBtn = $('#notifBtn');
 if(notifBtn) {
-  notifBtn.onclick = () => { $('#notifPanel').classList.toggle('hidden'); if (!state.notifs.every(n => n.read)) { API.readNotif(); setTimeout(() => loadData(), 500); } };
-}
-
-// LIVE ORDER TICKER GENERATOR
-const INDIAN_FIRST_NAMES = ["Rahul", "Amit", "Priya", "Sneha", "Vikram", "Rohit", "Anjali", "Karan", "Neha", "Sandeep", "Pooja", "Arjun", "
+  notifBtn.onclick = () =>
