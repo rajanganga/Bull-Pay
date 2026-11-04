@@ -22,7 +22,7 @@
         <label class="field"><span>Password</span><input class="input" name="p" type="password" placeholder="••••••••" required /></label>
         <button class="btn btn-primary btn-lg btn-block" type="submit">Login →</button>
       </form>
-      <p class="center-text text-sm text-dim mt-4"><a href="#" onclick="window.location.replace('/'); return false;" style="color:var(--neon); text-decoration:none; font-family:'Orbitron';">← Back to User Site</a></p>
+      <p class="center-text text-sm text-dim mt-4"><a href="/" style="color:var(--neon); text-decoration:none; font-family:'Orbitron';">← Back to User Site</a></p>
     </div>
   </div>
 
@@ -89,31 +89,24 @@
         <div class="card">
           <div class="card-title">Settings</div>
           <form id="settingsForm" class="stack">
-            
             <h3 style="color:var(--neon); font-family:'Orbitron'; margin-bottom:10px; font-size:14px; border-bottom:1px solid var(--border-soft); padding-bottom:5px;">Rate Config</h3>
             <div class="row" style="gap:12px;">
               <label class="field" style="flex:1;"><span>Base Rate (₹)</span><input class="input" name="baseRate" type="number" required /></label>
               <label class="field" style="flex:1;"><span>Rate Step (₹)</span><input class="input" name="rateStep" type="number" required /></label>
               <label class="field" style="flex:1;"><span>Min Sell (USDT)</span><input class="input" name="minSell" type="number" required /></label>
             </div>
-
             <div class="row" style="gap:12px; margin-top:10px;">
-              <label class="field" style="flex:1;">
-                <span>Offer Rate (₹) (e.g. 126)</span>
-                <input class="input" name="offerRate" type="number" />
-              </label>
+              <label class="field" style="flex:1;"><span>Offer Rate (₹) (e.g. 126)</span><input class="input" name="offerRate" type="number" /></label>
               <label class="field" style="flex:1; display:flex; align-items:center; gap:10px; margin-top:20px;">
                 <input type="checkbox" name="isOfferActive" id="isOfferActive" style="width:20px; height:20px; accent-color:var(--neon);" />
                 <span style="color:var(--neon); font-weight:bold;">Enable Special Offer</span>
               </label>
             </div>
-
             <h3 style="color:var(--neon); font-family:'Orbitron'; margin-top:20px; margin-bottom:10px; font-size:14px; border-bottom:1px solid var(--border-soft); padding-bottom:5px;">Network Addresses</h3>
             <label class="field"><span>Default Network</span><input class="input" name="network" required /></label>
             <label class="field"><span>TRC 20 Address</span><input class="input" name="trc20" required /></label>
             <label class="field"><span>BEP 20 Address</span><input class="input" name="bep20" required /></label>
             <label class="field"><span>ERC 20 Address</span><input class="input" name="erc20" required /></label>
-            
             <button class="btn btn-primary mt-2" type="submit" style="font-size:16px; padding:15px;">Save Settings</button>
           </form>
         </div>
@@ -251,7 +244,6 @@
                 <button class="btn btn-danger btn-sm" data-del="${u.id}">Delete</button>
               </div>
             </div>
-            
             ${userBanks.length ? `
               <div style="margin-top:12px; background:rgba(0,0,0,0.3); padding:12px; border-radius:2px; width:100%;">
                 <small style="color:var(--neon); font-weight:700; font-family:'Orbitron'; font-size:11px;">LINKED BANK ACCOUNTS:</small>
