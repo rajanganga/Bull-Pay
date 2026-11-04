@@ -87,10 +87,10 @@
 
       <section id="tab-settings" class="tab-content hidden">
         <div class="card">
-          <div class="card-title">Master Control Settings</div>
+          <div class="card-title">Settings</div>
           <form id="settingsForm" class="stack">
             
-            <h3 style="color:var(--neon); font-family:'Orbitron'; margin-bottom:10px; font-size:14px; border-bottom:1px solid var(--border-soft); padding-bottom:5px;">Rate & Limit Config</h3>
+            <h3 style="color:var(--neon); font-family:'Orbitron'; margin-bottom:10px; font-size:14px; border-bottom:1px solid var(--border-soft); padding-bottom:5px;">Rate Config</h3>
             <div class="row" style="gap:12px;">
               <label class="field" style="flex:1;"><span>Base Rate (₹)</span><input class="input" name="baseRate" type="number" required /></label>
               <label class="field" style="flex:1;"><span>Rate Step (₹)</span><input class="input" name="rateStep" type="number" required /></label>
@@ -108,28 +108,13 @@
               </label>
             </div>
 
-            <h3 style="color:var(--neon); font-family:'Orbitron'; margin-top:20px; margin-bottom:10px; font-size:14px; border-bottom:1px solid var(--border-soft); padding-bottom:5px;">System Control</h3>
-            <div class="row" style="gap:12px;">
-              <label class="field" style="flex:1;">
-                <span>Max Bank Accounts per User</span>
-                <input class="input" name="maxBanks" type="number" required />
-              </label>
-              <label class="field" style="flex:1; display:flex; align-items:center; gap:10px; margin-top:20px;">
-                <input type="checkbox" name="orderActive" id="orderActive" style="width:20px; height:20px; accent-color:var(--neon);" />
-                <span style="color:var(--neon); font-weight:bold;">Accept New Orders</span>
-              </label>
-            </div>
-
-            <label class="field"><span>Telegram Support Username (No @)</span><input class="input" name="telegramSupport" placeholder="e.g. bullpay_support" /></label>
-            <label class="field"><span>Warning Message (Shows on User Screen)</span><input class="input" name="warningMsg" placeholder="e.g. Server maintenance, payments may be delayed." /></label>
-
             <h3 style="color:var(--neon); font-family:'Orbitron'; margin-top:20px; margin-bottom:10px; font-size:14px; border-bottom:1px solid var(--border-soft); padding-bottom:5px;">Network Addresses</h3>
             <label class="field"><span>Default Network</span><input class="input" name="network" required /></label>
             <label class="field"><span>TRC 20 Address</span><input class="input" name="trc20" required /></label>
             <label class="field"><span>BEP 20 Address</span><input class="input" name="bep20" required /></label>
             <label class="field"><span>ERC 20 Address</span><input class="input" name="erc20" required /></label>
             
-            <button class="btn btn-primary mt-2" type="submit" style="font-size:16px; padding:15px;">Save All Settings</button>
+            <button class="btn btn-primary mt-2" type="submit" style="font-size:16px; padding:15px;">Save Settings</button>
           </form>
         </div>
       </section>
@@ -323,10 +308,6 @@
       f.minSell.value = adminState.settings.minSell || 100;
       f.offerRate.value = adminState.settings.offerRate || 126;
       f.isOfferActive.checked = adminState.settings.isOfferActive || false;
-      f.maxBanks.value = adminState.settings.maxBanks || 3;
-      f.telegramSupport.value = adminState.settings.telegramSupport || 'YourTelegramUsername';
-      f.warningMsg.value = adminState.settings.warningMsg || '';
-      f.orderActive.checked = adminState.settings.orderActive !== false;
     }
     
     $('#settingsForm').addEventListener('submit', async (e) => {
@@ -337,11 +318,9 @@
           trc20: f.trc20.value, bep20: f.bep20.value, erc20: f.erc20.value,
           baseRate: Number(f.baseRate.value), rateStep: Number(f.rateStep.value), 
           minSell: Number(f.minSell.value),
-          offerRate: Number(f.offerRate.value), isOfferActive: f.isOfferActive.checked,
-          maxBanks: Number(f.maxBanks.value), telegramSupport: f.telegramSupport.value,
-          warningMsg: f.warningMsg.value, orderActive: f.orderActive.checked
+          offerRate: Number(f.offerRate.value), isOfferActive: f.isOfferActive.checked
         }); 
-        toast('✅ Settings saved successfully'); await loadAll(); 
+        toast('✅ Settings saved'); await loadAll(); 
       } catch (err) { toast('❌ ' + err.message, 'err'); }
     });
 
@@ -387,4 +366,4 @@
     })();
   </script>
 </body>
-                                                                                                           </html>
+</html>
