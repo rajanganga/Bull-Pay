@@ -1,3 +1,4 @@
+// BullPay server - Node 18+
 const http = require('http'), fs = require('fs'), c = require('crypto'), path = require('path');
 const FILE = path.join(process.env.DATA_DIR || __dirname, 'data.json');
 const ADMIN_PASS = process.env.ADMIN_PASS || 'admin123';
@@ -54,7 +55,8 @@ function send(res, code, obj) { res.writeHead(code, { 'content-type': 'applicati
 function page(res, f) {
   res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
   const p = [path.join(__dirname, 'public', f), path.join(__dirname, f)].find(x => fs.existsSync(x));
-  res.end(fs.readFileSync(p));
+  if(p) res.end(fs.readFileSync(p));
+  else { res.end('<h1>File not found</h1>'); }
 }
 function throttle(ip) { const f = fails[ip]; return f && f.n >= 10 && Date.now() - f.t < 300000; }
 function bad(ip) { const f = fails[ip] || { n: 0 }; fails[ip] = { n: f.n + 1, t: Date.now() }; }
