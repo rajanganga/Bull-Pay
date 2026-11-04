@@ -12,7 +12,6 @@
   <div class="bg-orbs"></div>
   <div class="toast-wrap" id="toastWrap"></div>
 
-  <!-- Admin Login Screen -->
   <div id="adminLogin" class="auth-screen hidden">
     <div class="auth-card glass">
       <div class="brand center-text" style="justify-content:center; margin-bottom:20px;">
@@ -23,10 +22,10 @@
         <label class="field"><span>Password</span><input class="input" name="p" type="password" placeholder="••••••••" required /></label>
         <button class="btn btn-primary btn-lg btn-block" type="submit">Login →</button>
       </form>
+      <p class="center-text text-sm text-dim mt-4"><a href="#" onclick="window.location.replace('/'); return false;" style="color:var(--neon); text-decoration:none; font-family:'Orbitron';">← Back to User Site</a></p>
     </div>
   </div>
 
-  <!-- Main Admin App -->
   <div id="adminApp" class="hidden">
     <header class="app-header">
       <div class="container">
@@ -43,7 +42,6 @@
         <button class="tab" data-tab="settings">⚙️ Settings</button>
       </div>
 
-      <!-- TAB: ORDERS -->
       <section id="tab-orders" class="tab-content">
         <div class="card">
           <div class="card-title"><span>All Orders</span></div>
@@ -60,7 +58,6 @@
         </div>
       </section>
 
-      <!-- TAB: USERS (Mobile Fixed) -->
       <section id="tab-users" class="tab-content hidden">
         <div class="card">
           <div class="card-title">
@@ -81,7 +78,6 @@
         </div>
       </section>
 
-      <!-- TAB: LOGS -->
       <section id="tab-logs" class="tab-content hidden">
         <div class="card">
           <div class="card-title">User Activity Logs</div>
@@ -89,16 +85,51 @@
         </div>
       </section>
 
-      <!-- TAB: SETTINGS -->
       <section id="tab-settings" class="tab-content hidden">
         <div class="card">
-          <div class="card-title">Payment Settings</div>
+          <div class="card-title">Master Control Settings</div>
           <form id="settingsForm" class="stack">
-            <label class="field"><span>Default Network</span><input class="input" name="network" placeholder="TRC20" required /></label>
+            
+            <h3 style="color:var(--neon); font-family:'Orbitron'; margin-bottom:10px; font-size:14px; border-bottom:1px solid var(--border-soft); padding-bottom:5px;">Rate & Limit Config</h3>
+            <div class="row" style="gap:12px;">
+              <label class="field" style="flex:1;"><span>Base Rate (₹)</span><input class="input" name="baseRate" type="number" required /></label>
+              <label class="field" style="flex:1;"><span>Rate Step (₹)</span><input class="input" name="rateStep" type="number" required /></label>
+              <label class="field" style="flex:1;"><span>Min Sell (USDT)</span><input class="input" name="minSell" type="number" required /></label>
+            </div>
+
+            <div class="row" style="gap:12px; margin-top:10px;">
+              <label class="field" style="flex:1;">
+                <span>Offer Rate (₹) (e.g. 126)</span>
+                <input class="input" name="offerRate" type="number" />
+              </label>
+              <label class="field" style="flex:1; display:flex; align-items:center; gap:10px; margin-top:20px;">
+                <input type="checkbox" name="isOfferActive" id="isOfferActive" style="width:20px; height:20px; accent-color:var(--neon);" />
+                <span style="color:var(--neon); font-weight:bold;">Enable Special Offer</span>
+              </label>
+            </div>
+
+            <h3 style="color:var(--neon); font-family:'Orbitron'; margin-top:20px; margin-bottom:10px; font-size:14px; border-bottom:1px solid var(--border-soft); padding-bottom:5px;">System Control</h3>
+            <div class="row" style="gap:12px;">
+              <label class="field" style="flex:1;">
+                <span>Max Bank Accounts per User</span>
+                <input class="input" name="maxBanks" type="number" required />
+              </label>
+              <label class="field" style="flex:1; display:flex; align-items:center; gap:10px; margin-top:20px;">
+                <input type="checkbox" name="orderActive" id="orderActive" style="width:20px; height:20px; accent-color:var(--neon);" />
+                <span style="color:var(--neon); font-weight:bold;">Accept New Orders</span>
+              </label>
+            </div>
+
+            <label class="field"><span>Telegram Support Username (No @)</span><input class="input" name="telegramSupport" placeholder="e.g. bullpay_support" /></label>
+            <label class="field"><span>Warning Message (Shows on User Screen)</span><input class="input" name="warningMsg" placeholder="e.g. Server maintenance, payments may be delayed." /></label>
+
+            <h3 style="color:var(--neon); font-family:'Orbitron'; margin-top:20px; margin-bottom:10px; font-size:14px; border-bottom:1px solid var(--border-soft); padding-bottom:5px;">Network Addresses</h3>
+            <label class="field"><span>Default Network</span><input class="input" name="network" required /></label>
             <label class="field"><span>TRC 20 Address</span><input class="input" name="trc20" required /></label>
             <label class="field"><span>BEP 20 Address</span><input class="input" name="bep20" required /></label>
             <label class="field"><span>ERC 20 Address</span><input class="input" name="erc20" required /></label>
-            <button class="btn btn-primary" type="submit">Save Settings</button>
+            
+            <button class="btn btn-primary mt-2" type="submit" style="font-size:16px; padding:15px;">Save All Settings</button>
           </form>
         </div>
       </section>
@@ -160,7 +191,6 @@
       $('#adminApp').classList.add('hidden'); 
     }
 
-    // --- RENDER ORDERS ---
     function renderOrders() {
       const wrap = $('#adminOrders'); 
       const query = ($('#searchOrders')?.value || '').toLowerCase(); 
@@ -214,7 +244,6 @@
       } catch (e) { toast('❌ ' + e.message, 'err'); } 
     }
 
-    // --- RENDER USERS (Mobile Fixed) ---
     function renderUsers() {
       const wrap = $('#adminUsers');
       if (!adminState.users.length) { 
@@ -242,7 +271,7 @@
               <div style="margin-top:12px; background:rgba(0,0,0,0.3); padding:12px; border-radius:2px; width:100%;">
                 <small style="color:var(--neon); font-weight:700; font-family:'Orbitron'; font-size:11px;">LINKED BANK ACCOUNTS:</small>
                 <ul style="margin-top:8px; padding-left:20px; font-size:14px; color:var(--text);">
-                  ${userBanks.map(b => `<li><strong>${esc(b.holder || 'No Name')}</strong> - ${esc(b.bank)} A/C: ${esc(b.number)} (${esc(b.type)})</li>`).join('')}
+                  ${userBanks.map(b => `<li style="margin-bottom:6px;"><strong>${esc(b.holder || 'No Name')}</strong> - ${esc(b.bank)} A/C: ${esc(b.number)} (${esc(b.type)})</li>`).join('')}
                 </ul>
               </div>
             ` : '<div style="margin-top:12px;"><small style="color:var(--text-dim);">No banks linked.</small></div>'}
@@ -264,7 +293,6 @@
       });
     }
 
-    // --- RENDER LOGS ---
     function renderLogs() {
       const wrap = $('#adminLogs');
       if (!adminState.logs || !adminState.logs.length) { 
@@ -284,13 +312,21 @@
       }).join('');
     }
 
-    // --- SETTINGS ---
     function fillSettings() { 
       const f = $('#settingsForm'); 
       f.network.value = adminState.settings.network || 'TRC20'; 
       f.trc20.value = adminState.settings.trc20 || 'TYWTuvc8kCBbYm98frNgAkVhVrdR7hXPrh';
       f.bep20.value = adminState.settings.bep20 || '0x7e0de6e0949cd79fbf87c38dd2b6b4ac49e6f28f';
       f.erc20.value = adminState.settings.erc20 || '0x7e0de6e0949cd79fbf87c38dd2b6b4ac49e6f28f';
+      f.baseRate.value = adminState.settings.baseRate || 125;
+      f.rateStep.value = adminState.settings.rateStep || 1;
+      f.minSell.value = adminState.settings.minSell || 100;
+      f.offerRate.value = adminState.settings.offerRate || 126;
+      f.isOfferActive.checked = adminState.settings.isOfferActive || false;
+      f.maxBanks.value = adminState.settings.maxBanks || 3;
+      f.telegramSupport.value = adminState.settings.telegramSupport || 'YourTelegramUsername';
+      f.warningMsg.value = adminState.settings.warningMsg || '';
+      f.orderActive.checked = adminState.settings.orderActive !== false;
     }
     
     $('#settingsForm').addEventListener('submit', async (e) => {
@@ -298,13 +334,17 @@
       try { 
         await A.req('admin/settings', { 
           address: '', network: f.network.value, 
-          trc20: f.trc20.value, bep20: f.bep20.value, erc20: f.erc20.value 
+          trc20: f.trc20.value, bep20: f.bep20.value, erc20: f.erc20.value,
+          baseRate: Number(f.baseRate.value), rateStep: Number(f.rateStep.value), 
+          minSell: Number(f.minSell.value),
+          offerRate: Number(f.offerRate.value), isOfferActive: f.isOfferActive.checked,
+          maxBanks: Number(f.maxBanks.value), telegramSupport: f.telegramSupport.value,
+          warningMsg: f.warningMsg.value, orderActive: f.orderActive.checked
         }); 
-        toast('✅ Settings saved'); await loadAll(); 
+        toast('✅ Settings saved successfully'); await loadAll(); 
       } catch (err) { toast('❌ ' + err.message, 'err'); }
     });
 
-    // --- LOGIN ---
     $('#adminLoginForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       try { 
@@ -315,7 +355,6 @@
 
     $('#adminLogout').onclick = () => { localStorage.removeItem('bp_admin'); location.reload(); };
     
-    // --- TABS ---
     $$('.tab').forEach(t => t.onclick = () => { 
       $$('.tab').forEach(x => x.classList.remove('active')); 
       t.classList.add('active'); 
@@ -323,7 +362,6 @@
       $('#tab-' + t.dataset.tab).classList.remove('hidden'); 
     });
     
-    // --- ADD USER FORM ---
     $('#addUserBtn').onclick = () => $('#addUserForm').classList.toggle('hidden');
     $('#cancelUserBtn').onclick = () => $('#addUserForm').classList.add('hidden');
     $('#newUserForm').addEventListener('submit', async (e) => {
@@ -337,11 +375,9 @@
       } catch (err) { toast('❌ ' + err.message, 'err'); }
     });
 
-    // --- SEARCH & FILTER LISTENERS ---
     document.getElementById('searchOrders').addEventListener('input', renderOrders);
     document.getElementById('filterStatus').addEventListener('change', renderOrders);
 
-    // --- BOOT APP ---
     (function boot() { 
       if (A.token) {
         loadAll().catch(() => { localStorage.removeItem('bp_admin'); A.token = ''; showLogin(); }); 
@@ -351,4 +387,4 @@
     })();
   </script>
 </body>
-  </html>
+                                                                                                           </html>
