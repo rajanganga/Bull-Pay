@@ -40,7 +40,14 @@ function getBankLogo(domain) {
   return `https://logo.clearbit.com/${domain}`;
 }
 
-function toast(msg, type = 'ok') { const el = document.createElement('div'); el.className = 'toast ' + type; el.textContent = msg; $('#toastWrap').appendChild(el); setTimeout(() => el.remove(), 3500); }
+function toast(msg, type = 'ok') { 
+  const el = document.createElement('div'); 
+  el.className = 'toast ' + type; 
+  el.textContent = msg; 
+  const wrap = $('#toastWrap');
+  if(wrap) wrap.appendChild(el); 
+  setTimeout(() => el.remove(), 3500); 
+}
 function money(n) { return Number(n || 0).toLocaleString('en-US'); }
 function escape(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
 
@@ -58,12 +65,15 @@ function showLogin() { $('#loadingScreen').classList.add('hidden'); $('#loginScr
 function showMain() { $('#loadingScreen').classList.add('hidden'); $('#loginScreen').classList.add('hidden'); $('#mainApp').classList.remove('hidden'); }
 
 $('#loginForm').addEventListener('submit', async (e) => {
-  e.preventDefault(); const btn = e.target.querySelector('button[type="submit"]');
+  e.preventDefault(); 
+  const btn = e.target.querySelector('button[type="submit"]');
   btn.disabled = true; btn.textContent = 'Authenticating...';
   try { 
     const { t } = await API.login(e.target.u.value.trim(), e.target.p.value); 
     API.token = t; localStorage.setItem('bp_token', t); toast('✅ Login successful'); await loadData(); 
-  } catch (err) { toast('❌ ' + err.message, 'err'); btn.disabled = false; btn.textContent = 'Login →'; }
+  } catch (err) { 
+    toast('❌ ' + err.message, 'err'); btn.disabled = false; btn.textContent = 'Login →'; 
+  }
 });
 
 async function loadData() {
@@ -73,14 +83,16 @@ async function loadData() {
     state.banks = d.banks || []; state.orders = d.orders || []; state.notifs = d.notifications || [];
     if (state.selectedSlot === null && state.slots.length) state.selectedSlot = state.slots[0];
     showMain(); renderAll();
-  } catch (err) { API.token = ''; localStorage.removeItem('bp_token'); showLogin(); if (err.message !== 'Please login') toast('❌ ' + err.message, 'err'); }
+  } catch (err) { 
+    API.token = ''; localStorage.removeItem('bp_token'); showLogin(); 
+    if (err.message !== 'Please login') toast('❌ ' + err.message, 'err'); 
+  }
 }
 
 function renderAll() { 
   renderBalance(); renderSlots(); updateLiveRateCard(); renderPaymentAddress(); 
   renderBanks(); renderBankSelect(); renderOrders(); drawChart(); renderNotifs(); 
   
-  // Warning Message
   const warnDiv = $('#warningBanner');
   if (warnDiv) {
     if (state.settings.warningMsg) {
@@ -91,7 +103,6 @@ function renderAll() {
     }
   }
 
-  // Telegram Link
   const tgLink = $('#telegramLink');
   if (tgLink) {
     tgLink.href = `https://t.me/${state.settings.telegramSupport || 'YourTelegramUsername'}`;
@@ -134,29 +145,32 @@ function renderSlots() {
   
   grid.querySelectorAll('.slot').forEach(el => el.addEventListener('click', () => {
     state.selectedSlot = Number(el.dataset.slot); 
-    $('#manualAmount').value = ''; 
+    const mInput = $('#manualAmount'); if(mInput) mInput.value = ''; 
     renderSlots(); 
     updateLiveRateCard();  
   }));
 }
 
-$('#manualAmount').addEventListener('input', (e) => {
-  let val = Number(e.target.value);
-  if (val > 0) {
-    if (val < (state.settings.minSell || 100)) {
-      toast(`Minimum $${state.settings.minSell} required`, 'err');
-      state.selectedSlot = null;
+const manualInput = $('#manualAmount');
+if (manualInput) {
+  manualInput.addEventListener('input', (e) => {
+    let val = Number(e.target.value);
+    if (val > 0) {
+      if (val < (state.settings.minSell || 100)) {
+        toast(`Minimum $${state.settings.minSell} required`, 'err');
+        state.selectedSlot = null;
+      } else {
+        state.selectedSlot = val;
+      }
+      renderSlots(); 
+      updateLiveRateCard();
     } else {
-      state.selectedSlot = val;
+      state.selectedSlot = state.slots[0] || null;
+      renderSlots();
+      updateLiveRateCard();
     }
-    renderSlots(); 
-    updateLiveRateCard();
-  } else {
-    state.selectedSlot = state.slots[0] || null;
-    renderSlots();
-    updateLiveRateCard();
-  }
-});
+  });
+}
 
 function renderBalance() {
   const total = state.orders.filter(o => o.status === 'approved').reduce((s, o) => s + Number(o.slot || 0), 0);
@@ -167,10 +181,15 @@ function renderBalance() {
 
 function drawChart() {
   const canvas = $('#walletChart'); if (!canvas) return;
-  const ctx = canvas.getContext('2d'); const w = canvas.width = canvas.offsetWidth; const h = canvas.height = 120;
+  const ctx = canvas.getContext('2d'); 
+  const w = canvas.width = canvas.offsetWidth; 
+  const h = canvas.height = 120;
   ctx.clearRect(0, 0, w, h);
   const data = state.orders.slice(0, 7).reverse();
-  if (data.length < 2) { ctx.fillStyle = 'rgba(0,255,65,0.5)'; ctx.font = '14px Orbitron'; ctx.textAlign = 'center'; ctx.fillText('Not enough data', w/2, h/2); return; }
+  if (data.length < 2) { 
+    ctx.fillStyle = 'rgba(0,255,65,0.5)'; ctx.font = '14px Orbitron'; ctx.textAlign = 'center'; 
+    ctx.fillText('Not enough data', w/2, h/2); return; 
+  }
   const max = Math.max(...data.map(o => o.slot), 100); const stepX = w / (data.length - 1);
   ctx.beginPath(); ctx.moveTo(0, h - (data[0].slot / max) * (h - 20));
   for (let i = 1; i < data.length; i++) ctx.lineTo(i * stepX, h - (data[i].slot / max) * (h - 20));
@@ -199,14 +218,18 @@ function renderPaymentAddress() {
   }
 }
 
-$('#copyAddrBtn').addEventListener('click', () => {
-  const addr = $('#addressText').textContent;
-  if (!addr || addr === '-') return toast('Select network first', 'err');
-  navigator.clipboard.writeText(addr).then(() => toast('✅ Address Copied'));
-});
+const copyAddrBtn = $('#copyAddrBtn');
+if (copyAddrBtn) {
+  copyAddrBtn.addEventListener('click', () => {
+    const addr = $('#addressText').textContent;
+    if (!addr || addr === '-') return toast('Select network first', 'err');
+    navigator.clipboard.writeText(addr).then(() => toast('✅ Address Copied'));
+  });
+}
 
 function renderBanks() {
   const list = $('#banksList');
+  if (!list) return;
   if (!state.banks.length) { list.innerHTML = '<p class="text-dim center-text text-sm" style="padding:20px 0;">No banks added yet</p>'; return; }
   list.innerHTML = state.banks.map(b => `
     <div class="list-item">
@@ -223,6 +246,7 @@ function renderBanks() {
 
 function renderBankSelect() {
   const sel = $('#bankSelect');
+  if (!sel) return;
   if (!state.banks.length) { sel.innerHTML = '<option value="">No banks added. Add one first!</option>'; sel.disabled = true; }
   else { sel.disabled = false; sel.innerHTML = state.banks.map(b => `<option value="${b.id}">${escape(b.bank)} - A/C ${escape(b.number)}</option>`).join(''); }
 }
@@ -257,66 +281,81 @@ if (bankSearchInput) {
   document.addEventListener('click', (e) => { if (!bankSearchInput.contains(e.target) && !bankDropdown.contains(e.target)) bankDropdown.classList.remove('active'); });
 }
 
-$('#helpBtn').addEventListener('click', () => { $('#helpMenu').classList.toggle('active'); });
+const helpBtn = $('#helpBtn');
+if (helpBtn) helpBtn.addEventListener('click', () => { $('#helpMenu').classList.toggle('active'); });
 
-$('#orderForm').addEventListener('submit', async (e) => {
-  e.preventDefault(); const form = e.target; const btn = form.querySelector('button[type="submit"]');
-  if (state.selectedSlot === null || state.selectedSlot < (state.settings.minSell || 100)) return toast(`Select amount or enter min $${state.settings.minSell}`, 'err');
-  if (!form.bankId.value) return toast('Add bank first', 'err');
-  const file = form.receipt.files[0]; if (!file) return toast('Upload screenshot', 'err');
-  if (file.size > 2.5 * 1024 * 1024) return toast('Image too large (Max 2MB)', 'err');
-  
-  btn.disabled = true; btn.textContent = 'Uploading...';
-  const reader = new FileReader();
-  reader.onload = async (event) => {
-    try { await API.createOrder({ bankId: form.bankId.value, slot: state.selectedSlot, txid: form.txid.value.trim(), receipt: event.target.result }); toast('✅ Submitted'); form.reset(); $('#manualAmount').value = ''; await loadData(); } 
-    catch (err) { toast('❌ ' + err.message, 'err'); }
-    btn.disabled = false; btn.textContent = 'Submit Order →';
-  };
-  reader.readAsDataURL(file);
-});
+const orderForm = $('#orderForm');
+if (orderForm) {
+  orderForm.addEventListener('submit', async (e) => {
+    e.preventDefault(); const form = e.target; const btn = form.querySelector('button[type="submit"]');
+    if (state.selectedSlot === null || state.selectedSlot < (state.settings.minSell || 100)) return toast(`Select amount or enter min $${state.settings.minSell}`, 'err');
+    if (!form.bankId.value) return toast('Add bank first', 'err');
+    const file = form.receipt.files[0]; if (!file) return toast('Upload screenshot', 'err');
+    if (file.size > 2.5 * 1024 * 1024) return toast('Image too large (Max 2MB)', 'err');
+    
+    btn.disabled = true; btn.textContent = 'Uploading...';
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      try { 
+        await API.createOrder({ bankId: form.bankId.value, slot: state.selectedSlot, txid: form.txid.value.trim(), receipt: event.target.result }); 
+        toast('✅ Submitted'); form.reset(); const mInput = $('#manualAmount'); if(mInput) mInput.value = ''; await loadData(); 
+      } catch (err) { toast('❌ ' + err.message, 'err'); }
+      btn.disabled = false; btn.textContent = 'Submit Order →';
+    };
+    reader.readAsDataURL(file);
+  });
+}
 
-$('#addBankBtn').addEventListener('click', () => $('#addBankForm').classList.toggle('hidden'));
-$('#cancelBankBtn').addEventListener('click', () => $('#addBankForm').classList.add('hidden'));
+const addBankBtn = $('#addBankBtn');
+const cancelBankBtn = $('#cancelBankBtn');
+if (addBankBtn) addBankBtn.addEventListener('click', () => $('#addBankForm').classList.toggle('hidden'));
+if (cancelBankBtn) cancelBankBtn.addEventListener('click', () => $('#addBankForm').classList.add('hidden'));
 
-$('#newBankForm').addEventListener('submit', async (e) => {
-  e.preventDefault(); const form = e.target; const btn = form.querySelector('button[type="submit"]');
-  let finalBankName = selectedBankInput.value;
-  if (finalBankName === 'Other Bank') { if (!otherBankInput.value.trim()) return toast('Please enter your bank name', 'err'); finalBankName = otherBankInput.value.trim(); } 
-  else if (!finalBankName) { return toast('Please select a bank', 'err'); }
+const newBankForm = $('#newBankForm');
+if (newBankForm) {
+  newBankForm.addEventListener('submit', async (e) => {
+    e.preventDefault(); const form = e.target; const btn = form.querySelector('button[type="submit"]');
+    let finalBankName = selectedBankInput.value;
+    if (finalBankName === 'Other Bank') { if (!otherBankInput.value.trim()) return toast('Please enter your bank name', 'err'); finalBankName = otherBankInput.value.trim(); } 
+    else if (!finalBankName) { return toast('Please select a bank', 'err'); }
 
-  if (form.number.value.trim() !== form.confirmNumber.value.trim()) {
-    return toast('Account numbers do not match!', 'err');
-  }
+    if (form.number.value.trim() !== form.confirmNumber.value.trim()) {
+      return toast('Account numbers do not match!', 'err');
+    }
 
-  btn.disabled = true; btn.textContent = 'Saving...';
-  try { 
-    await API.addBank({ 
-      type: form.type.value, 
-      number: form.number.value.trim(), 
-      bank: finalBankName, 
-      ifsc: form.ifsc.value.trim().toUpperCase(),
-      holder: form.holder.value.trim() 
-    }); 
-    toast('✅ Bank added'); form.reset(); selectedBankInput.value = ''; otherBankField.classList.add('hidden'); otherBankInput.value = ''; $('#addBankForm').classList.add('hidden'); await loadData(); 
-  } catch (err) { toast('❌ ' + err.message, 'err'); }
-  btn.disabled = false; btn.textContent = 'Save Bank';
-});
+    btn.disabled = true; btn.textContent = 'Saving...';
+    try { 
+      await API.addBank({ 
+        type: form.type.value, 
+        number: form.number.value.trim(), 
+        bank: finalBankName, 
+        ifsc: form.ifsc.value.trim().toUpperCase(),
+        holder: form.holder.value.trim() 
+      }); 
+      toast('✅ Bank added'); form.reset(); selectedBankInput.value = ''; otherBankField.classList.add('hidden'); otherBankInput.value = ''; $('#addBankForm').classList.add('hidden'); await loadData(); 
+    } catch (err) { toast('❌ ' + err.message, 'err'); }
+    btn.disabled = false; btn.textContent = 'Save Bank';
+  });
+}
 
-$('#updatePassForm').addEventListener('submit', async (e) => {
-  e.preventDefault(); const form = e.target; const btn = form.querySelector('button[type="submit"]');
-  btn.disabled = true; btn.textContent = 'Updating...';
-  try {
-    await API.updatePass(form.oldP.value, form.newP.value);
-    toast('✅ Password updated successfully');
-    form.reset();
-  } catch (err) {
-    toast('❌ ' + err.message, 'err');
-  }
-  btn.disabled = false; btn.textContent = 'Update Password';
-});
+const updatePassForm = $('#updatePassForm');
+if (updatePassForm) {
+  updatePassForm.addEventListener('submit', async (e) => {
+    e.preventDefault(); const form = e.target; const btn = form.querySelector('button[type="submit"]');
+    btn.disabled = true; btn.textContent = 'Updating...';
+    try {
+      await API.updatePass(form.oldP.value, form.newP.value);
+      toast('✅ Password updated successfully');
+      form.reset();
+    } catch (err) {
+      toast('❌ ' + err.message, 'err');
+    }
+    btn.disabled = false; btn.textContent = 'Update Password';
+  });
+}
 
-$('#logoutBtn').addEventListener('click', () => { localStorage.removeItem('bp_token'); API.token = ''; location.reload(); });
+const logoutBtn = $('#logoutBtn');
+if(logoutBtn) logoutBtn.addEventListener('click', () => { localStorage.removeItem('bp_token'); API.token = ''; location.reload(); });
 
 $$('.tab').forEach(tab => tab.addEventListener('click', () => {
   $$('.tab').forEach(t => t.classList.remove('active')); tab.classList.add('active');
@@ -325,6 +364,7 @@ $$('.tab').forEach(tab => tab.addEventListener('click', () => {
 
 function renderOrders() {
   const list = $('#ordersList');
+  if (!list) return;
   if (!state.orders.length) { list.innerHTML = '<p class="text-dim center-text text-sm" style="padding:20px 0;">No orders yet</p>'; return; }
   list.innerHTML = state.orders.map(o => {
     const rate = getRate(o.slot); 
@@ -342,36 +382,25 @@ function renderOrders() {
 function renderNotifs() {
   const unread = state.notifs.filter(n => !n.read).length;
   const badge = $('#notifBadge');
+  if (!badge) return;
   if (unread > 0) { badge.classList.remove('hidden'); badge.textContent = unread > 9 ? '9+' : unread; } else badge.classList.add('hidden');
-  $('#notifList').innerHTML = state.notifs.length ? state.notifs.map(n => `
-    <div style="padding:10px 0; border-bottom:1px solid var(--border-soft); opacity:${n.read ? '0.6' : '1'};">
-      <strong style="font-size:13px; display:block; color:var(--neon); font-family:'Orbitron';">${escape(n.title)}</strong>
-      <span style="font-size:12px; color:var(--text-dim);">${escape(n.msg)}</span>
-    </div>
-  `).join('') : '<p class="text-dim text-sm text-center" style="padding:10px;">No notifications</p>';
+  const list = $('#notifList');
+  if(list) {
+    list.innerHTML = state.notifs.length ? state.notifs.map(n => `
+      <div style="padding:10px 0; border-bottom:1px solid var(--border-soft); opacity:${n.read ? '0.6' : '1'};">
+        <strong style="font-size:13px; display:block; color:var(--neon); font-family:'Orbitron';">${escape(n.title)}</strong>
+        <span style="font-size:12px; color:var(--text-dim);">${escape(n.msg)}</span>
+      </div>
+    `).join('') : '<p class="text-dim text-sm text-center" style="padding:10px;">No notifications</p>';
+  }
 }
-$('#notifBtn').onclick = () => { $('#notifPanel').classList.toggle('hidden'); if (!state.notifs.every(n => n.read)) { API.readNotif(); setTimeout(() => loadData(), 500); } };
+
+const notifBtn = $('#notifBtn');
+if(notifBtn) {
+  notifBtn.onclick = () => { $('#notifPanel').classList.toggle('hidden'); if (!state.notifs.every(n => n.read)) { API.readNotif(); setTimeout(() => loadData(), 500); } };
+}
 
 // AUTO UPDATE PWA LOGIC
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').then(reg => {
-      setInterval(() => { reg.update(); }, 60000);
-      reg.onupdatefound = () => {
-        const installingWorker = reg.installing;
-        installingWorker.onstatechange = () => {
-          if (installingWorker.state === 'installed' && navigator.serviceWorker.controller) {
-            toast('✨ New update available! Reloading...');
-            setTimeout(() => window.location.reload(), 2000);
-          }
-        };
-      };
-    });
-  });
-}
-
-// ==========================================
-// LIVE ORDER TICKER GENERATOR
-// ==========================================
-const INDIAN_FIRST_NAMES = ["Rahul", "Amit", "Priya", "Sneha", "Vikram", "Rohit", "Anjali", "Karan", "Neha", "Sandeep", "Pooja", "Arjun", "Kavita", "Manish", "Ritu", "Suresh", "Deepak", "Anil", "Jyoti", "Sunil"];
-const INDIAN_LAST_NAMES = ["Sharma", "Verma", "Patel", "Singh", "Gupta", "Reddy", "Kumar", "Jain", "Yadav",
+    navigator.serviceWorker.register
