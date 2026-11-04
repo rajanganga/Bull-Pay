@@ -60,8 +60,37 @@ function getRate(amount) {
   return base + Math.floor((amount - 500) / 100) * step;
 }
 
-function showLogin() { const l = $('#loadingScreen'); if(l) l.classList.add('hidden'); const li = $('#loginScreen'); if(li) li.classList.remove('hidden'); const m = $('#mainApp'); if(m) m.classList.add('hidden'); }
-function showMain() { const l = $('#loadingScreen'); if(l) l.classList.add('hidden'); const li = $('#loginScreen'); if(li) li.classList.add('hidden'); const m = $('#mainApp'); if(m) m.classList.remove('hidden'); }
+// INITIAL LOAD LOGIC
+window.addEventListener('DOMContentLoaded', () => {
+  const loader = document.getElementById('loadingScreen');
+  const login = document.getElementById('loginScreen');
+  const main = document.getElementById('mainApp');
+
+  if (loader) loader.style.display = 'none';
+  
+  if (API.token) {
+    // Token hai, toh seedha load karo
+    loadData().catch(() => {
+      if (login) login.style.display = 'flex';
+      if (main) main.style.display = 'none';
+    });
+  } else {
+    // Token nahi hai, toh login screen dikhao
+    if (login) login.style.display = 'flex';
+    if (main) main.style.display = 'none';
+  }
+});
+
+function showLogin() { 
+  const l = $('#loadingScreen'); if(l) l.style.display = 'none'; 
+  const li = $('#loginScreen'); if(li) li.style.display = 'flex'; 
+  const m = $('#mainApp'); if(m) m.style.display = 'none'; 
+}
+function showMain() { 
+  const l = $('#loadingScreen'); if(l) l.style.display = 'none'; 
+  const li = $('#loginScreen'); if(li) li.style.display = 'none'; 
+  const m = $('#mainApp'); if(m) m.style.display = 'block'; 
+}
 
 const loginForm = $('#loginForm');
 if (loginForm) {
@@ -377,20 +406,4 @@ function renderNotifs() {
     list.innerHTML = state.notifs.length ? state.notifs.map(n => `
       <div style="padding:10px 0; border-bottom:1px solid var(--border-soft); opacity:${n.read ? '0.6' : '1'};">
         <strong style="font-size:13px; display:block; color:var(--neon); font-family:'Orbitron';">${escape(n.title)}</strong>
-        <span style="font-size:12px; color:var(--text-dim);">${escape(n.msg)}</span>
-      </div>
-    `).join('') : '<p class="text-dim text-sm text-center" style="padding:10px;">No notifications</p>';
-  }
-}
-
-const notifBtn = $('#notifBtn');
-if(notifBtn) {
-  notifBtn.onclick = () => { const p = $('#notifPanel'); if(p) p.classList.toggle('hidden'); if (!state.notifs.every(n => n.read)) { API.readNotif(); setTimeout(() => loadData(), 500); } };
-}
-
-// AUTO UPDATE PWA LOGIC
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').then(reg => {
-      setInterval(() => { reg.update(); }, 60000);
-      reg.onupdatefound = () =>
+        <span style="font-size:12px; color:var(--text-di
