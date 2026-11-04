@@ -44,11 +44,14 @@ function toast(msg, type = 'ok') { const el = document.createElement('div'); el.
 function money(n) { return Number(n || 0).toLocaleString('en-US'); }
 function escape(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
 
-// NAYA RATE FORMULA: 100-500 tak 125, 500 ke baad har 100 par +1
 function getRate(amount) {
-  if (!amount || amount < 100) return 0;
-  if (amount <= 500) return 125;
-  return 125 + Math.floor((amount - 500) / 100) * 1;
+  const isOffer = state.settings.isOfferActive;
+  const base = isOffer ? (state.settings.offerRate || 126) : (state.settings.baseRate || 125);
+  const step = state.settings.rateStep || 1;
+  
+  if (!amount || amount < (state.settings.minSell || 100)) return 0;
+  if (amount <= 500) return base;
+  return base + Math.floor((amount - 500) / 100) * step;
 }
 
 function showLogin() { $('#loadingScreen').classList.add('hidden'); $('#loginScreen').classList.remove('hidden'); $('#mainApp').classList.add('hidden'); }
@@ -76,9 +79,25 @@ async function loadData() {
 function renderAll() { 
   renderBalance(); renderSlots(); updateLiveRateCard(); renderPaymentAddress(); 
   renderBanks(); renderBankSelect(); renderOrders(); drawChart(); renderNotifs(); 
+  
+  // Warning Message
+  const warnDiv = $('#warningBanner');
+  if (warnDiv) {
+    if (state.settings.warningMsg) {
+      warnDiv.innerHTML = `⚠️ ${state.settings.warningMsg}`;
+      warnDiv.classList.remove('hidden');
+    } else {
+      warnDiv.classList.add('hidden');
+    }
+  }
+
+  // Telegram Link
+  const tgLink = $('#telegramLink');
+  if (tgLink) {
+    tgLink.href = `https://t.me/${state.settings.telegramSupport || 'YourTelegramUsername'}`;
+  }
 }
 
-// UPDATED: Calculator logic integrated
 function updateLiveRateCard() {
   const amountEl = $('#liveRateAmount'); 
   const priceEl = $('#liveRatePrice');
@@ -124,8 +143,8 @@ function renderSlots() {
 $('#manualAmount').addEventListener('input', (e) => {
   let val = Number(e.target.value);
   if (val > 0) {
-    if (val < 100) {
-      toast('Minimum $100 required', 'err');
+    if (val < (state.settings.minSell || 100)) {
+      toast(`Minimum $${state.settings.minSell} required`, 'err');
       state.selectedSlot = null;
     } else {
       state.selectedSlot = val;
@@ -239,9 +258,10 @@ if (bankSearchInput) {
 }
 
 $('#helpBtn').addEventListener('click', () => { $('#helpMenu').classList.toggle('active'); });
+
 $('#orderForm').addEventListener('submit', async (e) => {
   e.preventDefault(); const form = e.target; const btn = form.querySelector('button[type="submit"]');
-  if (state.selectedSlot === null || state.selectedSlot < 100) return toast('Select amount or enter min $100', 'err');
+  if (state.selectedSlot === null || state.selectedSlot < (state.settings.minSell || 100)) return toast(`Select amount or enter min $${state.settings.minSell}`, 'err');
   if (!form.bankId.value) return toast('Add bank first', 'err');
   const file = form.receipt.files[0]; if (!file) return toast('Upload screenshot', 'err');
   if (file.size > 2.5 * 1024 * 1024) return toast('Image too large (Max 2MB)', 'err');
@@ -271,7 +291,6 @@ $('#newBankForm').addEventListener('submit', async (e) => {
 
   btn.disabled = true; btn.textContent = 'Saving...';
   try { 
-    // UPDATED: holder bhej rahe hain
     await API.addBank({ 
       type: form.type.value, 
       number: form.number.value.trim(), 
@@ -355,48 +374,4 @@ if ('serviceWorker' in navigator) {
 // LIVE ORDER TICKER GENERATOR
 // ==========================================
 const INDIAN_FIRST_NAMES = ["Rahul", "Amit", "Priya", "Sneha", "Vikram", "Rohit", "Anjali", "Karan", "Neha", "Sandeep", "Pooja", "Arjun", "Kavita", "Manish", "Ritu", "Suresh", "Deepak", "Anil", "Jyoti", "Sunil"];
-const INDIAN_LAST_NAMES = ["Sharma", "Verma", "Patel", "Singh", "Gupta", "Reddy", "Kumar", "Jain", "Yadav", "Chauhan", "Mishra", "Joshi", "Das", "Nair", "Pillai", "Mehta", "Agarwal", "Bansal"];
-let usedNamesToday = new Set(); 
-
-function generateRandomOrder() {
-  let name = "";
-  let isUnique = false;
-  let loopCount = 0;
-  
-  while (!isUnique && loopCount < 50) {
-    const fName = INDIAN_FIRST_NAMES[Math.floor(Math.random() * INDIAN_FIRST_NAMES.length)];
-    const lName = INDIAN_LAST_NAMES[Math.floor(Math.random() * INDIAN_LAST_NAMES.length)];
-    name = `${fName} ${lName.charAt(0)}.`;
-    if (!usedNamesToday.has(name)) { usedNamesToday.add(name); isUnique = true; }
-    loopCount++;
-  }
-
-  const amounts = [100, 150, 200, 250, 300, 500, 750, 1000, 1500, 2000];
-  const amount = amounts[Math.floor(Math.random() * amounts.length)];
-  let rate = 125;
-  if (amount > 500) rate = 125 + Math.floor((amount - 500) / 100) * 1;
-  const randomId = "UPI" + Math.floor(100000 + Math.random() * 900000);
-  return { name, amount, rate, randomId };
-}
-
-function addTickerItem() {
-  const track = document.getElementById('liveTickerTrack');
-  if (!track) return;
-  const order = generateRandomOrder();
-  const item = document.createElement('div');
-  item.className = 'ticker-item';
-  item.innerHTML = `
-    <strong><span><span class="tick-icon">✅</span>${order.name}</span> <span class="amount">$${order.amount}</span></strong>
-    <small>Sold USDT @ ₹${order.rate} • ${order.randomId}</small>
-  `;
-  if (track.children.length > 20) track.removeChild(track.firstChild);
-  track.appendChild(item);
-}
-
-function startTicker() {
-  for (let i = 0; i < 5; i++) addTickerItem();
-  setInterval(() => { addTickerItem(); }, Math.floor(Math.random() * 4000) + 4000); 
-}
-setTimeout(startTicker, 1000);
-
-(function boot() { if (API.token) loadData(); else showLogin(); })();
+const INDIAN_LAST_NAMES = ["Sharma", "Verma", "Patel", "Singh", "Gupta", "Reddy", "Kumar", "Jain", "Yadav",
