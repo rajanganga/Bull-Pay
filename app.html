@@ -24,20 +24,11 @@
         <label class="field"><span>Password</span><input class="input" name="p" type="password" placeholder="••••••••" required /></label>
         <button type="submit" class="btn btn-primary btn-lg btn-block mt-2">Login →</button>
       </form>
+      <p class="center-text text-sm text-dim mt-4"><a href="/admin" style="color:var(--neon); text-decoration:none; font-family:'Orbitron';">Admin Access →</a></p>
     </div>
   </div>
 
   <div id="mainApp" class="hidden fade-in">
-        <!-- LIVE ORDER TICKER START -->
-    <div class="live-ticker-container">
-      <div class="live-ticker-header">
-        <span class="live-dot"></span> LIVE TRANSACTIONS
-      </div>
-      <div class="live-ticker-track" id="liveTickerTrack">
-        <!-- JS yahan items add karega -->
-      </div>
-    </div>
-    <!-- LIVE ORDER TICKER END -->
     <header class="app-header">
       <div class="container">
         <div class="brand"><span class="brand-icon">⚡</span><span>Bull<span class="brand-accent">Pay</span></span></div>
@@ -48,12 +39,24 @@
       </div>
     </header>
 
+    <!-- LIVE ORDER TICKER START -->
+    <div class="live-ticker-container">
+      <div class="live-ticker-header">
+        <span class="live-dot"></span> LIVE TRANSACTIONS
+      </div>
+      <div class="live-ticker-track" id="liveTickerTrack"></div>
+    </div>
+    <!-- LIVE ORDER TICKER END -->
+
     <main class="container" style="padding-top:20px; padding-bottom:60px;">
       
       <div id="notifPanel" class="card glass hidden" style="position:absolute; right:20px; top:70px; z-index:100; width:300px; max-height:400px; overflow-y:auto;">
         <div class="card-title">Notifications</div>
         <div id="notifList"></div>
       </div>
+
+      <!-- WARNING BANNER (Naya) -->
+      <div id="warningBanner" class="hidden" style="background:rgba(255,0,60,0.1); border:1px solid var(--danger); color:var(--danger); padding:12px; border-radius:4px; margin-bottom:16px; font-weight:600; text-align:center;"></div>
 
       <div class="rate-card">
         <div><small>Selected Order</small><p class="amount" id="liveRateAmount">$0</p></div>
@@ -83,15 +86,16 @@
           <div class="card-title">Step 1 — Choose Amount</div>
           <div class="slot-grid" id="slotGrid"></div>
           
-          <!-- MANUAL USDT INPUT (NAYA) -->
+          <!-- MANUAL USDT INPUT -->
           <div style="margin-top: 20px; padding: 16px; border: 1px dashed var(--neon); background: rgba(0, 255, 65, 0.05);">
             <label class="field" style="margin-bottom: 0;">
               <span style="color: var(--neon); font-family: 'Orbitron';">Or Enter Custom USDT Amount (Min $100)</span>
-              <input type="number" class="input" id="manualAmount" placeholder="e.g. 150" min="100" />
+              <input type="number" class="input" id="manualAmount" placeholder="e.g. 150" />
             </label>
           </div>
         </div>
-                <!-- YOU WILL RECEIVE CALCULATOR -->
+        
+        <!-- CALCULATOR -->
         <div class="card mt-4" style="background:rgba(0,255,65,0.05); border:1px solid var(--neon); border-left-width:4px;">
           <div class="row between">
             <div>
@@ -106,6 +110,7 @@
           </div>
           <div style="margin-top:10px; font-size:12px; color:var(--text-dim); text-align:center;" id="calcRateText">Rate: ₹0/USDT</div>
         </div>
+        
         <div class="card mt-4">
           <div class="card-title">Step 2 — Send Payment To</div>
           <label class="field">
@@ -147,6 +152,9 @@
           <div class="card-title">Add New Bank</div>
           <form id="newBankForm">
             <label class="field"><span>Account Type</span><select class="input" name="type" required><option value="Savings">Savings</option><option value="Current">Current</option></select></label>
+            
+            <label class="field"><span>Account Holder Name</span><input class="input" name="holder" placeholder="As per bank records" required /></label>
+            
             <label class="field">
               <span>Bank Name</span>
               <div class="bank-select-wrapper">
@@ -159,7 +167,6 @@
               <span>Type Bank Name</span>
               <input type="text" class="input" id="otherBankInput" placeholder="Enter your bank name" />
             </label>
-                        <label class="field"><span>Account Holder Name</span><input class="input" name="holder" placeholder="As per bank records" required /></label>
             <label class="field"><span>Account Number</span><input class="input" name="number" id="accNum" placeholder="Account Number" required /></label>
             <label class="field"><span>Confirm Account Number</span><input class="input" name="confirmNumber" id="confirmAccNum" placeholder="Re-enter Account Number" required /></label>
             <label class="field"><span>IFSC Code</span><input class="input" name="ifsc" placeholder="IFSC Code" required style="text-transform:uppercase;" /></label>
@@ -193,9 +200,9 @@
   <div class="help-menu" id="helpMenu">
     <div style="font-size:12px; font-weight:700; color:var(--text-dim); text-transform:uppercase; margin-bottom:4px; padding-left:5px; font-family:'Orbitron';">24x7 Support</div>
     <a href="https://wa.me/16722817269" target="_blank"><img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="WA"> WhatsApp</a>
-    <a href="https://t.me/" target="_blank"><img src="https://upload.wikimedia.org/wikipedia/commons/8/82/Telegram_logo.svg" alt="TG"> Telegram</a>
+    <a href="https://t.me/YourTelegramUsername" target="_blank" id="telegramLink"><img src="https://upload.wikimedia.org/wikipedia/commons/8/82/Telegram_logo.svg" alt="TG"> Telegram</a>
   </div>
 
   <script src="app.js"></script>
 </body>
-                               </html>
+</html>
