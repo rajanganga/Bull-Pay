@@ -74,6 +74,7 @@
               <option value="ERC20">ERC 20 (Ethereum)</option>
             </select>
           </label>
+          <!-- ADDRESS BOX -->
           <div id="paymentDetails" style="display:none; margin-top:16px; background:rgba(0,255,65,0.05); padding:16px; border:1px dashed #00FF41;">
             <div class="row" style="justify-content:space-between; margin-bottom:12px;">
               <strong style="color:#00FF41;">USDT</strong>
@@ -98,9 +99,14 @@
       <!-- BANKS TAB -->
       <section id="tab-banks" class="tab-content" style="display:none;">
         <div class="card">
-          <div class="card-title"><span>Your Bank Accounts</span><button id="addBankBtn" class="btn btn-primary btn-sm">+ Add</button></div>
+          <div class="card-title">
+            <span>Your Bank Accounts</span>
+            <button id="addBankBtn" class="btn btn-primary btn-sm">+ Add</button>
+          </div>
           <div id="banksList"></div>
         </div>
+        
+        <!-- ADD BANK FORM -->
         <div id="addBankForm" class="card mt-4" style="display: none;">
           <div class="card-title">Add New Bank</div>
           <form id="newBankForm">
