@@ -1,10 +1,24 @@
 const API = {
   token: localStorage.getItem('bp_token') || '',
-  async req(path, body) {
+    async req(path, body) {
     const headers = { 'Content-Type': 'application/json' };
-    if (this.token) headers['x-token'] = this.token;
+    // Har baar fresh token uthao localStorage se
+    const currentToken = localStorage.getItem('bp_token');
+    if (currentToken) headers['x-token'] = currentToken;
+    
     const res = await fetch('/api/' + path, { method: 'POST', headers, body: body ? JSON.stringify(body) : undefined });
     const data = await res.json().catch(() => ({}));
+    
+    // Agar server bole login karo, toh auto logout kar do
+    if (res.status === 401) {
+      localStorage.removeItem('bp_token');
+      const li = document.querySelector('#loginScreen'); 
+      if(li) li.style.display = 'flex'; 
+      const m = document.querySelector('#mainApp'); 
+      if(m) m.style.display = 'none';
+      throw new Error("Session expired. Please login again.");
+    }
+
     if (!res.ok) throw new Error(data.e || 'Request failed');
     return data;
   },
