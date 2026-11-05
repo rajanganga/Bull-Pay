@@ -11,11 +11,14 @@ const API = {
   login: (u, p) => API.req('login', { u, p }),
   me: () => API.req('me', {}),
   addBank: (b) => API.req('bank/add', b),
-  createOrder: (o) => API.req('order', o)
+  delBank: (id) => API.req('bank/del', { id }),
+  createOrder: (o) => API.req('order', o),
+  updatePass: (oldP, newP) => API.req('user/pass', { oldP, newP }) 
 };
 
 const state = { slots: [], settings: {}, banks: [], orders: [], selectedSlot: null };
 const $ = (sel) => document.querySelector(sel);
+const $$ = (sel) => document.querySelectorAll(sel);
 
 function toast(msg, type = 'ok') { 
   const el = document.createElement('div'); 
@@ -25,6 +28,8 @@ function toast(msg, type = 'ok') {
   if(wrap) wrap.appendChild(el); 
   setTimeout(() => el.remove(), 3500); 
 }
+function money(n) { return Number(n || 0).toLocaleString('en-US'); }
+function escape(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
 
 function getRate(amount) {
   const isOffer = state.settings.isOfferActive;
@@ -35,12 +40,19 @@ function getRate(amount) {
   return base + Math.floor((amount - 500) / 100) * step;
 }
 
-// Page Load
 window.addEventListener('DOMContentLoaded', () => {
   if (API.token) loadData();
 });
 
-// Login
+function showLogin() { 
+  const li = $('#loginScreen'); if(li) li.style.display = 'flex'; 
+  const m = $('#mainApp'); if(m) m.style.display = 'none'; 
+}
+function showMain() { 
+  const li = $('#loginScreen'); if(li) li.style.display = 'none'; 
+  const m = $('#mainApp'); if(m) m.style.display = 'block'; 
+}
+
 const loginForm = $('#loginForm');
 if (loginForm) {
   loginForm.addEventListener('submit', async (e) => {
@@ -63,19 +75,19 @@ async function loadData() {
     state.slots = d.slots || []; state.settings = d.settings || {};
     state.banks = d.banks || []; state.orders = d.orders || [];
     if (state.selectedSlot === null && state.slots.length) state.selectedSlot = state.slots[0];
-    
-    // UI Show
-    const l = $('#loginScreen'); if(l) l.style.display = 'none'; 
-    const m = $('#mainApp'); if(m) m.style.display = 'block'; 
-    
-    renderSlots(); 
-    updateRate(); 
-    renderBanks();
+    showMain(); renderAll();
   } catch (err) { 
-    localStorage.removeItem('bp_token'); API.token = ''; 
-    const l = $('#loginScreen'); if(l) l.style.display = 'flex'; 
-    const m = $('#mainApp'); if(m) m.style.display = 'none'; 
+    API.token = ''; localStorage.removeItem('bp_token'); showLogin(); 
+    if (err.message !== 'Please login') toast('❌ ' + err.message, 'err'); 
   }
+}
+
+function renderAll() { 
+  renderSlots(); 
+  updateRate(); 
+  renderPaymentAddress(); 
+  renderBanks(); 
+  renderBankSelect(); 
 }
 
 function updateRate() {
@@ -97,8 +109,9 @@ function renderSlots() {
   const grid = $('#slotGrid'); if (!grid) return;
   grid.innerHTML = state.slots.map(s => {
     const rate = getRate(s); const isSelected = state.selectedSlot === s;
-    return `<div class="slot ${isSelected ? 'selected' : ''}" data-slot="${s}" style="padding:10px; border:1px solid #00FF41; margin:5px; display:inline-block; cursor:pointer; color:#fff;">
-      <span>$${s}</span><br><small style="color:#00FF41;">₹${rate}</small>
+    return `<div class="slot ${isSelected ? 'selected' : ''}" data-slot="${s}">
+      <span class="slot-amt">$${s}</span>
+      <span class="slot-rate">₹${rate}</span>
     </div>`;
   }).join('');
   
@@ -109,52 +122,131 @@ function renderSlots() {
   }));
 }
 
+function renderPaymentAddress() {
+  const select = $('#networkSelect');
+  const details = $('#paymentDetails');
+  const addrText = $('#addressText');
+  const badge = $('#networkBadge');
+
+  if (select) {
+    select.addEventListener('change', (e) => {
+      const net = e.target.value;
+      if (!net) { details.style.display = 'none'; return; }
+      let address = '';
+      if (net === 'TRC20') address = state.settings.trc20 || 'TYWTuvc8kCBbYm98frNgAkVhVrdR7hXPrh';
+      else if (net === 'BEP20') address = state.settings.bep20 || '0x7e0de6e0949cd79fbf87c38dd2b6b4ac49e6f28f';
+      else if (net === 'ERC20') address = state.settings.erc20 || '0x7e0de6e0949cd79fbf87c38dd2b6b4ac49e6f28f';
+      addrText.textContent = address; badge.textContent = net; details.style.display = 'block';
+    });
+  }
+}
+
+const copyAddrBtn = $('#copyAddrBtn');
+if (copyAddrBtn) {
+  copyAddrBtn.addEventListener('click', () => {
+    const addr = $('#addressText').textContent;
+    if (!addr || addr === '-') return toast('Select network first', 'err');
+    navigator.clipboard.writeText(addr).then(() => toast('✅ Address Copied'));
+  });
+}
+
 function renderBanks() {
   const list = $('#banksList');
   if (!list) return;
-  if (!state.banks.length) { list.innerHTML = '<p>No banks added yet</p>'; return; }
+  if (!state.banks.length) { list.innerHTML = '<p class="text-dim center-text text-sm" style="padding:20px 0;">No banks added yet</p>'; return; }
   list.innerHTML = state.banks.map(b => `
-    <div style="border:1px solid #333; padding:10px; margin-bottom:5px;">
-      <strong>${b.bank}</strong><br>
-      <small>A/C: ${b.number}</small>
+    <div class="list-item">
+      <div class="info"><strong>${escape(b.bank)} • ${escape(b.type)}</strong><small>${b.holder ? 'Name: ' + escape(b.holder) + ' | ' : ''}A/C ${escape(b.number)} • IFSC ${escape(b.ifsc)}</small></div>
+      <div class="row"><button class="btn btn-danger btn-sm" data-del-bank="${b.id}">Delete</button></div>
     </div>
   `).join('');
-
-  const sel = $('#bankSelect');
-  if(sel) sel.innerHTML = state.banks.map(b => `<option value="${b.id}">${b.bank} - ${b.number}</option>`).join('');
+  
+  list.querySelectorAll('[data-del-bank]').forEach(btn => btn.addEventListener('click', async () => {
+    if (!confirm('Delete?')) return;
+    try { await API.delBank(btn.dataset.delBank); toast('✅ Deleted'); await loadData(); } catch (e) { toast('❌ ' + e.message, 'err'); }
+  }));
 }
 
-// Add Bank
+function renderBankSelect() {
+  const sel = $('#bankSelect');
+  if (!sel) return;
+  if (!state.banks.length) { sel.innerHTML = '<option value="">No banks added. Add one first!</option>'; sel.disabled = true; }
+  else { sel.disabled = false; sel.innerHTML = state.banks.map(b => `<option value="${b.id}">${escape(b.bank)} - A/C ${escape(b.number)}</option>`).join(''); }
+}
+
+// BANK ADD
+const addBankBtn = $('#addBankBtn');
+const cancelBankBtn = $('#cancelBankBtn');
+if (addBankBtn) addBankBtn.addEventListener('click', () => { const f = $('#addBankForm'); f.style.display = f.style.display === 'none' ? 'block' : 'none'; });
+if (cancelBankBtn) cancelBankBtn.addEventListener('click', () => { $('#addBankForm').style.display = 'none'; });
+
 const newBankForm = $('#newBankForm');
 if (newBankForm) {
   newBankForm.addEventListener('submit', async (e) => {
     e.preventDefault(); const form = e.target; const btn = form.querySelector('button[type="submit"]');
+    let bankName = form.bank.value.trim();
+    if (!bankName) return toast('Please enter bank name', 'err');
+    if (form.number.value.trim() !== form.confirmNumber.value.trim()) return toast('Account numbers do not match!', 'err');
+
     btn.disabled = true; btn.textContent = 'Saving...';
     try { 
       await API.addBank({ 
-        type: 'Savings', 
+        type: form.type.value, 
         number: form.number.value.trim(), 
-        bank: form.bank.value.trim(), 
+        bank: bankName, 
         ifsc: form.ifsc.value.trim().toUpperCase(),
         holder: form.holder.value.trim() 
       }); 
-      toast('✅ Bank added'); form.reset(); await loadData(); 
+      toast('✅ Bank added'); form.reset(); $('#addBankForm').style.display = 'none'; await loadData(); 
     } catch (err) { toast('❌ ' + err.message, 'err'); }
     btn.disabled = false; btn.textContent = 'Save Bank';
   });
 }
 
-// Logout
+// ORDER SUBMIT
+const orderForm = $('#orderForm');
+if (orderForm) {
+  orderForm.addEventListener('submit', async (e) => {
+    e.preventDefault(); const form = e.target; const btn = form.querySelector('button[type="submit"]');
+    if (state.selectedSlot === null) return toast(`Select amount`, 'err');
+    if (!form.bankId.value) return toast('Add bank first', 'err');
+    const file = form.receipt.files[0]; if (!file) return toast('Upload screenshot', 'err');
+    
+    btn.disabled = true; btn.textContent = 'Uploading...';
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      try { 
+        await API.createOrder({ bankId: form.bankId.value, slot: state.selectedSlot, txid: form.txid.value.trim(), receipt: event.target.result }); 
+        toast('✅ Submitted'); form.reset(); await loadData(); 
+      } catch (err) { toast('❌ ' + err.message, 'err'); }
+      btn.disabled = false; btn.textContent = 'Submit Order →';
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+// PASSWORD UPDATE
+const updatePassForm = $('#updatePassForm');
+if (updatePassForm) {
+  updatePassForm.addEventListener('submit', async (e) => {
+    e.preventDefault(); const form = e.target; const btn = form.querySelector('button[type="submit"]');
+    btn.disabled = true; btn.textContent = 'Updating...';
+    try {
+      await API.updatePass(form.oldP.value, form.newP.value);
+      toast('✅ Password updated successfully');
+      form.reset();
+    } catch (err) {
+      toast('❌ ' + err.message, 'err');
+    }
+    btn.disabled = false; btn.textContent = 'Update Password';
+  });
+}
+
 const logoutBtn = $('#logoutBtn');
 if(logoutBtn) logoutBtn.addEventListener('click', () => { localStorage.removeItem('bp_token'); location.reload(); });
 
-// Tabs
-document.querySelectorAll('.tab').forEach(tab => {
-  tab.addEventListener('click', () => {
-    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active')); 
-    tab.classList.add('active');
-    document.querySelectorAll('.tab-content').forEach(c => c.style.display = 'none'); 
-    const target = document.getElementById('tab-' + tab.dataset.tab); 
-    if(target) target.style.display = 'block';
-  });
-});
+$$('.tab').forEach(tab => tab.addEventListener('click', () => {
+  $$('.tab').forEach(t => t.classList.remove('active')); tab.classList.add('active');
+  $$('.tab-content').forEach(c => c.style.display = 'none'); 
+  const target = $('#tab-' + tab.dataset.tab); if(target) target.style.display = 'block';
+}));
