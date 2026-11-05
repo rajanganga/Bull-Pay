@@ -75,7 +75,8 @@ async function loadData() {
     state.slots = d.slots || []; state.settings = d.settings || {};
     state.banks = d.banks || []; state.orders = d.orders || [];
     if (state.selectedSlot === null && state.slots.length) state.selectedSlot = state.slots[0];
-    showMain(); renderAll();
+    showMain(); 
+    renderAll();
   } catch (err) { 
     API.token = ''; localStorage.removeItem('bp_token'); showLogin(); 
     if (err.message !== 'Please login') toast('❌ ' + err.message, 'err'); 
@@ -85,9 +86,9 @@ async function loadData() {
 function renderAll() { 
   renderSlots(); 
   updateRate(); 
-  renderPaymentAddress(); 
   renderBanks(); 
   renderBankSelect(); 
+  setupNetworkSelect(); // Network Dropdown Setup
 }
 
 function updateRate() {
@@ -122,7 +123,8 @@ function renderSlots() {
   }));
 }
 
-function renderPaymentAddress() {
+// --- NETWORK SELECT & ADDRESS SHOW ---
+function setupNetworkSelect() {
   const select = $('#networkSelect');
   const details = $('#paymentDetails');
   const addrText = $('#addressText');
@@ -132,11 +134,15 @@ function renderPaymentAddress() {
     select.addEventListener('change', (e) => {
       const net = e.target.value;
       if (!net) { details.style.display = 'none'; return; }
+      
       let address = '';
       if (net === 'TRC20') address = state.settings.trc20 || 'TYWTuvc8kCBbYm98frNgAkVhVrdR7hXPrh';
       else if (net === 'BEP20') address = state.settings.bep20 || '0x7e0de6e0949cd79fbf87c38dd2b6b4ac49e6f28f';
       else if (net === 'ERC20') address = state.settings.erc20 || '0x7e0de6e0949cd79fbf87c38dd2b6b4ac49e6f28f';
-      addrText.textContent = address; badge.textContent = net; details.style.display = 'block';
+      
+      addrText.textContent = address; 
+      badge.textContent = net; 
+      details.style.display = 'block'; // Address box open
     });
   }
 }
@@ -174,17 +180,28 @@ function renderBankSelect() {
   else { sel.disabled = false; sel.innerHTML = state.banks.map(b => `<option value="${b.id}">${escape(b.bank)} - A/C ${escape(b.number)}</option>`).join(''); }
 }
 
-// BANK ADD
+// --- ADD BANK FORM SHOW/HIDE ---
 const addBankBtn = $('#addBankBtn');
 const cancelBankBtn = $('#cancelBankBtn');
-if (addBankBtn) addBankBtn.addEventListener('click', () => { const f = $('#addBankForm'); f.style.display = f.style.display === 'none' ? 'block' : 'none'; });
-if (cancelBankBtn) cancelBankBtn.addEventListener('click', () => { $('#addBankForm').style.display = 'none'; });
+if (addBankBtn) {
+  addBankBtn.addEventListener('click', () => { 
+    const f = $('#addBankForm'); 
+    f.style.display = (f.style.display === 'none' || f.style.display === '') ? 'block' : 'none'; 
+  });
+}
+if (cancelBankBtn) {
+  cancelBankBtn.addEventListener('click', () => { 
+    $('#addBankForm').style.display = 'none'; 
+  });
+}
 
+// --- SAVE NEW BANK ---
 const newBankForm = $('#newBankForm');
 if (newBankForm) {
   newBankForm.addEventListener('submit', async (e) => {
     e.preventDefault(); const form = e.target; const btn = form.querySelector('button[type="submit"]');
     let bankName = form.bank.value.trim();
+    
     if (!bankName) return toast('Please enter bank name', 'err');
     if (form.number.value.trim() !== form.confirmNumber.value.trim()) return toast('Account numbers do not match!', 'err');
 
@@ -197,13 +214,18 @@ if (newBankForm) {
         ifsc: form.ifsc.value.trim().toUpperCase(),
         holder: form.holder.value.trim() 
       }); 
-      toast('✅ Bank added'); form.reset(); $('#addBankForm').style.display = 'none'; await loadData(); 
-    } catch (err) { toast('❌ ' + err.message, 'err'); }
+      toast('✅ Bank added'); 
+      form.reset(); 
+      $('#addBankForm').style.display = 'none'; 
+      await loadData(); 
+    } catch (err) { 
+      toast('❌ ' + err.message, 'err'); 
+    }
     btn.disabled = false; btn.textContent = 'Save Bank';
   });
 }
 
-// ORDER SUBMIT
+// --- SUBMIT ORDER ---
 const orderForm = $('#orderForm');
 if (orderForm) {
   orderForm.addEventListener('submit', async (e) => {
@@ -225,7 +247,7 @@ if (orderForm) {
   });
 }
 
-// PASSWORD UPDATE
+// --- UPDATE PASSWORD ---
 const updatePassForm = $('#updatePassForm');
 if (updatePassForm) {
   updatePassForm.addEventListener('submit', async (e) => {
@@ -242,6 +264,7 @@ if (updatePassForm) {
   });
 }
 
+// --- LOGOUT & TABS ---
 const logoutBtn = $('#logoutBtn');
 if(logoutBtn) logoutBtn.addEventListener('click', () => { localStorage.removeItem('bp_token'); location.reload(); });
 
