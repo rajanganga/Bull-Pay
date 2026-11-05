@@ -3,14 +3,17 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <meta name="theme-color" content="#05070A" />
   <title>BullPay — Wallet</title>
+  <link rel="manifest" href="/manifest.json">
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800;900&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
+  <div class="bg-orbs"></div>
   <div class="toast-wrap" id="toastWrap"></div>
 
-  <!-- LOGIN SCREEN (Default Visible) -->
+  <!-- LOGIN SCREEN -->
   <div id="loginScreen" class="auth-screen fade-in">
     <div class="auth-card glass">
       <div class="brand center-text" style="justify-content:center; margin-bottom:20px;">
@@ -26,7 +29,7 @@
     </div>
   </div>
 
-  <!-- MAIN APP SCREEN (Hidden initially) -->
+  <!-- MAIN APP SCREEN -->
   <div id="mainApp" style="display: none;">
     <header class="app-header">
       <div class="container">
@@ -50,8 +53,10 @@
       <div class="tabs" style="margin-top:24px;">
         <button class="tab active" data-tab="deposit">💳 Deposit</button>
         <button class="tab" data-tab="banks">🏦 Banks</button>
+        <button class="tab" data-tab="settings">⚙️ Settings</button>
       </div>
 
+      <!-- DEPOSIT TAB -->
       <section id="tab-deposit" class="tab-content">
         <div class="card">
           <div class="card-title">Step 1 — Choose Amount</div>
@@ -60,40 +65,64 @@
         
         <div class="card mt-4">
           <div class="card-title">Step 2 — Send Payment To</div>
-          <select class="input" id="networkSelect">
-            <option value="">-- Select Network --</option>
-            <option value="TRC20">TRC 20 (Tron)</option>
-            <option value="BEP20">BEP 20 (BSC)</option>
-          </select>
-          <div id="paymentDetails" style="display:none; margin-top:16px; background:rgba(0,255,65,0.05); padding:16px;">
-            <p id="addressText" style="word-break:break-all;">-</p>
+          <label class="field">
+            <span>Select Network</span>
+            <select class="input" id="networkSelect">
+              <option value="">-- Select Network --</option>
+              <option value="TRC20">TRC 20 (Tron)</option>
+              <option value="BEP20">BEP 20 (BSC)</option>
+              <option value="ERC20">ERC 20 (Ethereum)</option>
+            </select>
+          </label>
+          <div id="paymentDetails" style="display:none; margin-top:16px; background:rgba(0,255,65,0.05); padding:16px; border:1px dashed #00FF41;">
+            <div class="row" style="justify-content:space-between; margin-bottom:12px;">
+              <strong style="color:#00FF41;">USDT</strong>
+              <span id="networkBadge" class="badge badge-approved">TRC20</span>
+            </div>
+            <p id="addressText" style="word-break:break-all; font-size:14px; margin-bottom:12px; color:#fff;">-</p>
+            <button id="copyAddrBtn" class="btn btn-primary btn-block btn-sm">📋 Copy Address</button>
           </div>
         </div>
 
         <div class="card mt-4">
           <div class="card-title">Step 3 — Submit Details</div>
           <form id="orderForm">
-            <select class="input" name="bankId" id="bankSelect" required></select>
-            <input class="input mt-2" name="txid" placeholder="Enter TXID" required />
-            <input class="input mt-2" type="file" name="receipt" accept="image/*" required />
-            <button type="submit" class="btn btn-primary btn-block mt-2">Submit Order</button>
+            <label class="field"><span>Select Receiving Account</span><select class="input" name="bankId" id="bankSelect" required></select></label>
+            <label class="field"><span>Transaction ID</span><input class="input" name="txid" placeholder="Enter TXID" required /></label>
+            <label class="field"><span>Payment Screenshot</span><input class="input" type="file" name="receipt" accept="image/*" required style="padding:10px;" /></label>
+            <button type="submit" class="btn btn-primary btn-lg btn-block mt-2">Submit Order →</button>
           </form>
         </div>
       </section>
 
+      <!-- BANKS TAB -->
       <section id="tab-banks" class="tab-content" style="display:none;">
         <div class="card">
-          <div class="card-title">Your Bank Accounts</div>
+          <div class="card-title"><span>Your Bank Accounts</span><button id="addBankBtn" class="btn btn-primary btn-sm">+ Add</button></div>
           <div id="banksList"></div>
         </div>
-        <div class="card mt-4">
+        <div id="addBankForm" class="card mt-4" style="display: none;">
           <div class="card-title">Add New Bank</div>
           <form id="newBankForm">
-            <input class="input mt-2" name="holder" placeholder="Account Holder Name" required />
-            <input class="input mt-2" name="bank" placeholder="Bank Name" required />
-            <input class="input mt-2" name="number" placeholder="Account Number" required />
-            <input class="input mt-2" name="ifsc" placeholder="IFSC Code" required />
-            <button type="submit" class="btn btn-primary mt-2">Save Bank</button>
+            <label class="field"><span>Account Type</span><select class="input" name="type" required><option value="Savings">Savings</option><option value="Current">Current</option></select></label>
+            <label class="field"><span>Account Holder Name</span><input class="input" name="holder" placeholder="As per bank records" required /></label>
+            <label class="field"><span>Bank Name</span><input class="input" name="bank" placeholder="Enter Bank Name" required /></label>
+            <label class="field"><span>Account Number</span><input class="input" name="number" placeholder="Account Number" required /></label>
+            <label class="field"><span>Confirm Account Number</span><input class="input" name="confirmNumber" placeholder="Re-enter Account Number" required /></label>
+            <label class="field"><span>IFSC Code</span><input class="input" name="ifsc" placeholder="IFSC Code" required style="text-transform:uppercase;" /></label>
+            <div class="row"><button type="submit" class="btn btn-primary">Save Bank</button><button type="button" id="cancelBankBtn" class="btn btn-ghost">Cancel</button></div>
+          </form>
+        </div>
+      </section>
+
+      <!-- SETTINGS TAB -->
+      <section id="tab-settings" class="tab-content" style="display:none;">
+        <div class="card">
+          <div class="card-title">Update Password</div>
+          <form id="updatePassForm">
+            <label class="field"><span>Current Password</span><input class="input" name="oldP" type="password" placeholder="Enter current password" required /></label>
+            <label class="field"><span>New Password</span><input class="input" name="newP" type="password" placeholder="Min 6 characters" required /></label>
+            <button type="submit" class="btn btn-primary btn-block mt-2">Update Password</button>
           </form>
         </div>
       </section>
