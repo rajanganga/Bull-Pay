@@ -1,8 +1,8 @@
-const CACHE_NAME = 'bullpay-v30'; 
+const CACHE_NAME = 'bullpay-v45'; 
 const ASSETS = ['/', '/style.css', '/app.js', '/manifest.json'];
 
 self.addEventListener('install', (e) => {
-  self.skipWaiting(); 
+  self.skipWaiting(); // Turant naya code activate karo
   e.waitUntil(caches.open(CACHE_NAME).then(c => c.addAll(ASSETS)));
 });
 
@@ -10,7 +10,9 @@ self.addEventListener('activate', (e) => {
   e.waitUntil(
     caches.keys().then(keys => {
       return Promise.all(
-        keys.map(key => { if (key !== CACHE_NAME) return caches.delete(key); })
+        keys.map(key => { 
+          if (key !== CACHE_NAME) return caches.delete(key); // Purana cache delete karo
+        })
       );
     }).then(() => self.clients.claim())
   );
