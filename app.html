@@ -3,21 +3,15 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
-  <meta name="theme-color" content="#05070A" />
   <title>BullPay — Wallet</title>
-  <link rel="manifest" href="/manifest.json">
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800;900&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div class="bg-orbs"></div>
   <div class="toast-wrap" id="toastWrap"></div>
 
-  <!-- LOADING SCREEN (Jab tak data load nahi hota) -->
-  <div id="loadingScreen" class="loading-screen"><div class="spinner"></div></div>
-
-  <!-- LOGIN SCREEN -->
-  <div id="loginScreen" class="auth-screen hidden fade-in">
+  <!-- LOGIN SCREEN (Default Visible) -->
+  <div id="loginScreen" class="auth-screen fade-in">
     <div class="auth-card glass">
       <div class="brand center-text" style="justify-content:center; margin-bottom:20px;">
         <span class="brand-icon">⚡</span><span>Bull<span class="brand-accent">Pay</span></span>
@@ -32,25 +26,17 @@
     </div>
   </div>
 
-  <!-- MAIN APP SCREEN -->
-  <div id="mainApp" class="hidden fade-in">
+  <!-- MAIN APP SCREEN (Hidden initially) -->
+  <div id="mainApp" style="display: none;">
     <header class="app-header">
       <div class="container">
         <div class="brand"><span class="brand-icon">⚡</span><span>Bull<span class="brand-accent">Pay</span></span></div>
-        <div class="row">
-          <button id="notifBtn" class="btn btn-ghost btn-sm" style="position:relative;">🔔<span id="notifBadge" class="hidden" style="position:absolute; top:-4px; right:-4px; background:var(--danger); color:white; border-radius:50%; width:16px; height:16px; font-size:10px; display:grid; place-items:center;">!</span></button>
-          <button id="logoutBtn" class="btn btn-danger btn-sm">Logout</button>
-        </div>
+        <button id="logoutBtn" class="btn btn-danger btn-sm">Logout</button>
       </div>
     </header>
 
     <main class="container" style="padding-top:20px; padding-bottom:60px;">
       
-      <div id="notifPanel" class="card glass hidden" style="position:absolute; right:20px; top:70px; z-index:100; width:300px; max-height:400px; overflow-y:auto;">
-        <div class="card-title">Notifications</div>
-        <div id="notifList"></div>
-      </div>
-
       <div class="rate-card">
         <div><small>Selected Order</small><p class="amount" id="liveRateAmount">$0</p></div>
         <div><small>Live Rate</small><p class="price" id="liveRatePrice">₹0/USDT</p></div>
@@ -59,133 +45,60 @@
       <div class="card balance-card">
         <div class="balance-label">Wallet Overview <span class="live-dot"></span></div>
         <div class="balance-amount"><span class="cur">$</span><span id="totalDeposits">0</span></div>
-        <div class="balance-meta">
-          <div><small>Orders</small><p id="orderCount">0</p></div>
-          <div><small>Approved</small><p id="approvedCount" style="color:var(--neon);">0</p></div>
-          <div><small>Pending</small><p id="pendingCount" style="color:var(--warn);">0</p></div>
-        </div>
-        <canvas id="walletChart" width="400" height="100" style="width:100%; height:120px; margin-top:15px;"></canvas>
       </div>
 
       <div class="tabs" style="margin-top:24px;">
         <button class="tab active" data-tab="deposit">💳 Deposit</button>
         <button class="tab" data-tab="banks">🏦 Banks</button>
-        <button class="tab" data-tab="orders">📋 Orders</button>
-        <button class="tab" data-tab="settings">⚙️ Settings</button>
       </div>
 
       <section id="tab-deposit" class="tab-content">
         <div class="card">
           <div class="card-title">Step 1 — Choose Amount</div>
           <div class="slot-grid" id="slotGrid"></div>
-          <div style="margin-top: 20px; padding: 16px; border: 1px dashed var(--neon); background: rgba(0, 255, 65, 0.05);">
-            <label class="field" style="margin-bottom: 0;">
-              <span style="color: var(--neon); font-family: 'Orbitron';">Or Enter Custom USDT Amount (Min $100)</span>
-              <input type="number" class="input" id="manualAmount" placeholder="e.g. 150" />
-            </label>
-          </div>
-        </div>
-        
-        <div class="card mt-4" style="background:rgba(0,255,65,0.05); border:1px solid var(--neon); border-left-width:4px;">
-          <div class="row between">
-            <div>
-              <small style="color:var(--text-dim); text-transform:uppercase; font-family:'Orbitron'; font-size:11px;">You Send</small>
-              <p style="font-family:'Orbitron'; font-size:18px; font-weight:700; color:#fff;" id="calcSend">0 USDT</p>
-            </div>
-            <div style="color:var(--neon); font-size:24px; font-weight:bold;">➔</div>
-            <div style="text-align:right;">
-              <small style="color:var(--text-dim); text-transform:uppercase; font-family:'Orbitron'; font-size:11px;">You Receive</small>
-              <p style="font-family:'Orbitron'; font-size:22px; font-weight:900; color:var(--neon); text-shadow:0 0 10px var(--neon-glow);" id="calcReceive">₹0</p>
-            </div>
-          </div>
-          <div style="margin-top:10px; font-size:12px; color:var(--text-dim); text-align:center;" id="calcRateText">Rate: ₹0/USDT</div>
         </div>
         
         <div class="card mt-4">
           <div class="card-title">Step 2 — Send Payment To</div>
-          <label class="field">
-            <span>Select Network</span>
-            <select class="input" id="networkSelect">
-              <option value="">-- Select Network --</option>
-              <option value="TRC20">TRC 20 (Tron)</option>
-              <option value="BEP20">BEP 20 (BSC)</option>
-              <option value="ERC20">ERC 20 (Ethereum)</option>
-            </select>
-          </label>
-          <div id="paymentDetails" class="hidden" style="margin-top:16px; background:rgba(0,255,65,0.05); border:1px dashed var(--neon); padding:16px; border-radius:2px;">
-            <div class="row" style="justify-content:space-between; margin-bottom:12px;">
-              <div class="row"><img src="https://cryptologos.cc/logos/tether-usdt-logo.svg?v=025" alt="USDT" style="width:28px; height:28px;" /><strong style="color:var(--neon); font-family:'Orbitron'; font-size:16px;">USDT</strong></div>
-              <span class="badge badge-approved" id="networkBadge">TRC20</span>
-            </div>
-            <p style="word-break:break-all; font-size:14px; color:var(--text-dim); margin-bottom:12px; font-family:'Rajdhani';" id="addressText">-</p>
-            <button id="copyAddrBtn" class="btn btn-primary btn-block btn-sm">📋 Copy Address</button>
+          <select class="input" id="networkSelect">
+            <option value="">-- Select Network --</option>
+            <option value="TRC20">TRC 20 (Tron)</option>
+            <option value="BEP20">BEP 20 (BSC)</option>
+          </select>
+          <div id="paymentDetails" style="display:none; margin-top:16px; background:rgba(0,255,65,0.05); padding:16px;">
+            <p id="addressText" style="word-break:break-all;">-</p>
           </div>
         </div>
 
         <div class="card mt-4">
           <div class="card-title">Step 3 — Submit Details</div>
           <form id="orderForm">
-            <label class="field"><span>Select Receiving Account</span><select class="input" name="bankId" id="bankSelect" required></select></label>
-            <label class="field"><span>Transaction ID</span><input class="input" name="txid" placeholder="Enter TXID" required /></label>
-            <label class="field"><span>Payment Screenshot</span><input class="input" type="file" name="receipt" accept="image/*" required style="padding:10px;" /></label>
-            <button type="submit" class="btn btn-primary btn-lg btn-block mt-2">Submit Order →</button>
+            <select class="input" name="bankId" id="bankSelect" required></select>
+            <input class="input mt-2" name="txid" placeholder="Enter TXID" required />
+            <input class="input mt-2" type="file" name="receipt" accept="image/*" required />
+            <button type="submit" class="btn btn-primary btn-block mt-2">Submit Order</button>
           </form>
         </div>
       </section>
 
-      <section id="tab-banks" class="tab-content hidden">
+      <section id="tab-banks" class="tab-content" style="display:none;">
         <div class="card">
-          <div class="card-title"><span>Your Bank Accounts</span><button id="addBankBtn" class="btn btn-primary btn-sm">+ Add</button></div>
+          <div class="card-title">Your Bank Accounts</div>
           <div id="banksList"></div>
         </div>
-        <div id="addBankForm" class="card mt-4 hidden">
+        <div class="card mt-4">
           <div class="card-title">Add New Bank</div>
           <form id="newBankForm">
-            <label class="field"><span>Account Type</span><select class="input" name="type" required><option value="Savings">Savings</option><option value="Current">Current</option></select></label>
-            <label class="field"><span>Account Holder Name</span><input class="input" name="holder" placeholder="As per bank records" required /></label>
-            <label class="field">
-              <span>Bank Name</span>
-              <div class="bank-select-wrapper">
-                <input type="text" class="input" id="bankSearch" placeholder="Search Bank..." autocomplete="off" required />
-                <input type="hidden" name="bank" id="selectedBank" required />
-                <div class="bank-dropdown" id="bankDropdown"></div>
-              </div>
-            </label>
-            <label class="field hidden" id="otherBankField"><span>Type Bank Name</span><input type="text" class="input" id="otherBankInput" placeholder="Enter your bank name" /></label>
-            <label class="field"><span>Account Number</span><input class="input" name="number" id="accNum" placeholder="Account Number" required /></label>
-            <label class="field"><span>Confirm Account Number</span><input class="input" name="confirmNumber" id="confirmAccNum" placeholder="Re-enter Account Number" required /></label>
-            <label class="field"><span>IFSC Code</span><input class="input" name="ifsc" placeholder="IFSC Code" required style="text-transform:uppercase;" /></label>
-            <div class="row"><button type="submit" class="btn btn-primary">Save Bank</button><button type="button" id="cancelBankBtn" class="btn btn-ghost">Cancel</button></div>
-          </form>
-        </div>
-      </section>
-
-      <section id="tab-orders" class="tab-content hidden">
-        <div class="card">
-          <div class="card-title">Order History</div>
-          <div id="ordersList"></div>
-        </div>
-      </section>
-
-      <section id="tab-settings" class="tab-content hidden">
-        <div class="card">
-          <div class="card-title">Update Password</div>
-          <form id="updatePassForm">
-            <label class="field"><span>Current Password</span><input class="input" name="oldP" type="password" placeholder="Enter current password" required /></label>
-            <label class="field"><span>New Password</span><input class="input" name="newP" type="password" placeholder="Min 6 characters" required /></label>
-            <button type="submit" class="btn btn-primary btn-block mt-2">Update Password</button>
+            <input class="input mt-2" name="holder" placeholder="Account Holder Name" required />
+            <input class="input mt-2" name="bank" placeholder="Bank Name" required />
+            <input class="input mt-2" name="number" placeholder="Account Number" required />
+            <input class="input mt-2" name="ifsc" placeholder="IFSC Code" required />
+            <button type="submit" class="btn btn-primary mt-2">Save Bank</button>
           </form>
         </div>
       </section>
 
     </main>
-  </div>
-
-  <button class="help-btn" id="helpBtn" aria-label="Help">💬</button>
-  <div class="help-menu" id="helpMenu">
-    <div style="font-size:12px; font-weight:700; color:var(--text-dim); text-transform:uppercase; margin-bottom:4px; padding-left:5px; font-family:'Orbitron';">24x7 Support</div>
-    <a href="https://wa.me/16722817269" target="_blank"><img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="WA"> WhatsApp</a>
-    <a href="https://t.me/YourTelegramUsername" target="_blank" id="telegramLink"><img src="https://upload.wikimedia.org/wikipedia/commons/8/82/Telegram_logo.svg" alt="TG"> Telegram</a>
   </div>
 
   <script src="app.js"></script>
