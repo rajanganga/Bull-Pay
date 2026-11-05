@@ -21,6 +21,29 @@ const state = { slots: [], settings: {}, banks: [], orders: [], notifs: [], sele
 const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => document.querySelectorAll(sel);
 
+// BANK LIST (Saare Indian Banks)
+const INDIAN_BANKS = [
+  "State Bank of India (SBI)", "HDFC Bank", "ICICI Bank", "Axis Bank", "Kotak Mahindra Bank", 
+  "Punjab National Bank (PNB)", "Bank of Baroda", "Canara Bank", "Union Bank of India", 
+  "IndusInd Bank", "Yes Bank", "IDFC First Bank", "Bank of India", "Central Bank of India", 
+  "Indian Bank", "Indian Overseas Bank", "UCO Bank", "Bank of Maharashtra", "Punjab & Sind Bank", 
+  "Federal Bank", "Other Bank"
+];
+
+// Bank Logo Fetcher
+function getBankDomain(bankName) {
+  const map = {
+    "State Bank of India (SBI)": "sbi.co.in", "HDFC Bank": "hdfcbank.com", "ICICI Bank": "icicibank.com",
+    "Axis Bank": "axisbank.com", "Kotak Mahindra Bank": "kotak.com", "Punjab National Bank (PNB)": "pnbindia.in",
+    "Bank of Baroda": "bankofbaroda.in", "Canara Bank": "canarabank.com", "Union Bank of India": "unionbankofindia.co.in",
+    "IndusInd Bank": "indusind.com", "Yes Bank": "yesbank.in", "IDFC First Bank": "idfcfirstbank.com",
+    "Bank of India": "bankofindia.co.in", "Central Bank of India": "centralbankofindia.co.in", "Indian Bank": "indianbank.in",
+    "Indian Overseas Bank": "iob.in", "UCO Bank": "ucobank.com", "Bank of Maharashtra": "bankofmaharashtra.in",
+    "Punjab & Sind Bank": "psbindia.com", "Federal Bank": "federalbank.co.in"
+  };
+  return map[bankName] || "generic";
+}
+
 function toast(msg, type = 'ok') { 
   const el = document.createElement('div'); 
   el.className = 'toast ' + type; 
@@ -41,7 +64,6 @@ function getRate(amount) {
   return base + Math.floor((amount - 500) / 100) * step;
 }
 
-// INITIAL LOAD LOGIC (Sabse simple aur safe)
 window.addEventListener('load', () => {
   const loader = document.getElementById('loadingScreen');
   if(loader) loader.classList.add('hidden');
@@ -243,6 +265,9 @@ function renderBankSelect() {
   else { sel.disabled = false; sel.innerHTML = state.banks.map(b => `<option value="${b.id}">${escape(b.bank)} - A/C ${escape(b.number)}</option>`).join(''); }
 }
 
+// ==========================================
+// NAYA BANK SEARCH DROPDOWN LOGIC
+// ==========================================
 const bankSearchInput = $('#bankSearch');
 const bankDropdown = $('#bankDropdown');
 const selectedBankInput = $('#selectedBank');
@@ -250,28 +275,74 @@ const otherBankField = $('#otherBankField');
 const otherBankInput = $('#otherBankInput');
 
 if (bankSearchInput) {
-  function renderDropdown(query) {
-    const filtered = INDIAN_BANKS.filter(b => b.name.toLowerCase().includes(query.toLowerCase()));
-    if (!filtered.length) { bankDropdown.innerHTML = '<div style="padding:10px; font-size:13px; color:var(--text-dim);">No bank found</div>'; return; }
-    bankDropdown.innerHTML = filtered.map(b => `
-      <div class="bank-option" data-name="${b.name}">
-        <img src="${getBankLogo(b.domain)}" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0Ij48cGF0aCBmaWxsPSIjY2NjIiBkPSJNMTIgMkM2LjQ4IDIgMiA2LjQ4IDIgMTJzNC40OCAxMCAxMCAxMCAxMC00LjQ4IDEwLTEwUzE3LjUyIDIgMTIgMnptMCAxOGMtNC40MSAwLTgtMy41OS04LThzMy41OS04IDgtOCA4IDMuNTkgOCA4LTQuNDEgOC04IDh6Ii8+PC9zdmc+'" alt="Logo">
-        <span>${b.name}</span>
-      </div>
-    `).join('');
-    bankDropdown.querySelectorAll('.bank-option').forEach(opt => {
-      opt.addEventListener('click', () => {
-        const bankName = opt.dataset.name;
-        bankSearchInput.value = bankName; selectedBankInput.value = bankName; bankDropdown.classList.remove('active');
-        if (bankName === 'Other Bank') { otherBankField.classList.remove('hidden'); otherBankInput.required = true; otherBankInput.focus(); }
-        else { otherBankField.classList.add('hidden'); otherBankInput.required = false; otherBankInput.value = ''; }
+  // 1. Input field me type karte hi list dikhao
+  bankSearchInput.addEventListener('input', function() {
+    const val = this.value.toLowerCase();
+    bankDropdown.innerHTML = ''; // Purani list clear karo
+    bankDropdown.classList.add('active'); // List show karo
+
+    // Filter banks
+    const filtered = INDIAN_BANKS.filter(b => b.toLowerCase().includes(val));
+
+    if (filtered.length === 0) {
+      bankDropdown.innerHTML = '<div style="padding:10px; font-size:13px; color:var(--text-dim);">No bank found</div>';
+      selectedBankInput.value = ''; // Reset
+      return;
+    }
+
+    // Dropdown me items add karo
+    filtered.forEach(bankName => {
+      const div = document.createElement('div');
+      div.className = 'bank-option';
+      
+      // Logo logic
+      const domain = getBankDomain(bankName);
+      let logoUrl = domain === 'generic' ? 'https://cdn-icons-png.flaticon.com/512/2830/2830284.png' : `https://logo.clearbit.com/${domain}`;
+      
+      div.innerHTML = `<img src="${logoUrl}" alt="logo" onerror="this.src='https://cdn-icons-png.flaticon.com/512/2830/2830284.png'"> <span>${bankName}</span>`;
+      
+      // Jab item par click karein
+      div.addEventListener('click', () => {
+        bankSearchInput.value = bankName; // Input me bank ka naam daalo
+        selectedBankInput.value = bankName; // Hidden input me value save karo
+        bankDropdown.classList.remove('active'); // List band karo
+
+        // Agar Other Bank select kiya hai to extra input dikhao
+        if (bankName === 'Other Bank') {
+          otherBankField.classList.remove('hidden');
+          otherBankInput.required = true;
+          otherBankInput.focus();
+        } else {
+          otherBankField.classList.add('hidden');
+          otherBankInput.required = false;
+          otherBankInput.value = '';
+        }
       });
+
+      bankDropdown.appendChild(div);
     });
-  }
-  bankSearchInput.addEventListener('focus', () => { renderDropdown(bankSearchInput.value); bankDropdown.classList.add('active'); });
-  bankSearchInput.addEventListener('input', (e) => { renderDropdown(e.target.value); bankDropdown.classList.add('active'); });
-  document.addEventListener('click', (e) => { if (!bankSearchInput.contains(e.target) && !bankDropdown.contains(e.target)) bankDropdown.classList.remove('active'); });
+  });
+
+  // 2. Jab input field par focus karein, tab bhi list dikhao
+  bankSearchInput.addEventListener('focus', function() {
+    if (this.value === '') {
+      this.dispatchEvent(new Event('input')); // Trigger input event to show all banks
+    } else {
+      bankDropdown.classList.add('active');
+    }
+  });
+
+  // 3. Agar kahin bahar click karein to list band ho jaye
+  document.addEventListener('click', (e) => {
+    if (!bankSearchInput.contains(e.target) && !bankDropdown.contains(e.target)) {
+      bankDropdown.classList.remove('active');
+    }
+  });
 }
+
+// ==========================================
+// FORM SUBMIT
+// ==========================================
 
 const helpBtn = $('#helpBtn');
 if (helpBtn) helpBtn.addEventListener('click', () => { $('#helpMenu').classList.toggle('active'); });
@@ -307,9 +378,16 @@ const newBankForm = $('#newBankForm');
 if (newBankForm) {
   newBankForm.addEventListener('submit', async (e) => {
     e.preventDefault(); const form = e.target; const btn = form.querySelector('button[type="submit"]');
-    let finalBankName = selectedBankInput.value;
-    if (finalBankName === 'Other Bank') { if (!otherBankInput.value.trim()) return toast('Please enter your bank name', 'err'); finalBankName = otherBankInput.value.trim(); } 
-    else if (!finalBankName) { return toast('Please select a bank', 'err'); }
+    
+    let finalBankName = selectedBankInput.value || bankSearchInput.value.trim();
+    
+    if (finalBankName === 'Other Bank') { 
+      if (!otherBankInput.value.trim()) return toast('Please enter your bank name', 'err'); 
+      finalBankName = otherBankInput.value.trim(); 
+    } 
+    else if (!finalBankName) { 
+      return toast('Please select or type a bank name', 'err'); 
+    }
 
     if (form.number.value.trim() !== form.confirmNumber.value.trim()) {
       return toast('Account numbers do not match!', 'err');
@@ -324,7 +402,7 @@ if (newBankForm) {
         ifsc: form.ifsc.value.trim().toUpperCase(),
         holder: form.holder.value.trim() 
       }); 
-      toast('✅ Bank added'); form.reset(); selectedBankInput.value = ''; otherBankField.classList.add('hidden'); otherBankInput.value = ''; $('#addBankForm').classList.add('hidden'); await loadData(); 
+      toast('✅ Bank added'); form.reset(); selectedBankInput.value = ''; bankSearchInput.value = ''; otherBankField.classList.add('hidden'); otherBankInput.value = ''; $('#addBankForm').classList.add('hidden'); await loadData(); 
     } catch (err) { toast('❌ ' + err.message, 'err'); }
     btn.disabled = false; btn.textContent = 'Save Bank';
   });
@@ -379,34 +457,4 @@ function renderNotifs() {
   if (unread > 0) { badge.classList.remove('hidden'); badge.textContent = unread > 9 ? '9+' : unread; } else badge.classList.add('hidden');
   const list = $('#notifList');
   if(list) {
-    list.innerHTML = state.notifs.length ? state.notifs.map(n => `
-      <div style="padding:10px 0; border-bottom:1px solid var(--border-soft); opacity:${n.read ? '0.6' : '1'};">
-        <strong style="font-size:13px; display:block; color:var(--neon); font-family:'Orbitron';">${escape(n.title)}</strong>
-        <span style="font-size:12px; color:var(--text-dim);">${escape(n.msg)}</span>
-      </div>
-    `).join('') : '<p class="text-dim text-sm text-center" style="padding:10px;">No notifications</p>';
-  }
-}
-
-const notifBtn = $('#notifBtn');
-if(notifBtn) {
-  notifBtn.onclick = () => { const p = $('#notifPanel'); if(p) p.classList.toggle('hidden'); if (!state.notifs.every(n => n.read)) { API.readNotif(); setTimeout(() => loadData(), 500); } };
-}
-
-// AUTO UPDATE PWA LOGIC
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').then(reg => {
-      setInterval(() => { reg.update(); }, 60000);
-      reg.onupdatefound = () => {
-        const installingWorker = reg.installing;
-        installingWorker.onstatechange = () => {
-          if (installingWorker.state === 'installed' && navigator.serviceWorker.controller) {
-            toast('✨ New update available! Reloading...');
-            setTimeout(() => window.location.reload(), 2000);
-          }
-        };
-      };
-    }).catch(e => console.log('SW Error:', e));
-  });
-    }
+    list.innerHTML = state.notifs.length ? state.no
