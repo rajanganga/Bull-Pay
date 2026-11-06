@@ -1,24 +1,17 @@
 const API = {
   token: localStorage.getItem('bp_token') || '',
-    async req(path, body) {
+  async req(path, body) {
     const headers = { 'Content-Type': 'application/json' };
-    // Har baar fresh token uthao localStorage se
     const currentToken = localStorage.getItem('bp_token');
     if (currentToken) headers['x-token'] = currentToken;
-    
     const res = await fetch('/api/' + path, { method: 'POST', headers, body: body ? JSON.stringify(body) : undefined });
     const data = await res.json().catch(() => ({}));
-    
-    // Agar server bole login karo, toh auto logout kar do
     if (res.status === 401) {
       localStorage.removeItem('bp_token');
-      const li = document.querySelector('#loginScreen'); 
-      if(li) li.style.display = 'flex'; 
-      const m = document.querySelector('#mainApp'); 
-      if(m) m.style.display = 'none';
-      throw new Error("Session expired. Please login again.");
+      document.getElementById('loginScreen').style.display = 'grid';
+      document.getElementById('mainApp').style.display = 'none';
+      throw new Error("Session expired. Login again.");
     }
-
     if (!res.ok) throw new Error(data.e || 'Request failed');
     return data;
   },
@@ -26,264 +19,185 @@ const API = {
   me: () => API.req('me', {}),
   addBank: (b) => API.req('bank/add', b),
   delBank: (id) => API.req('bank/del', { id }),
-  createOrder: (o) => API.req('order', o),
-  updatePass: (oldP, newP) => API.req('user/pass', { oldP, newP }) 
+  createOrder: (o) => API.req('order', o)
 };
 
-const state = { slots: [], settings: {}, banks: [], orders: [], selectedSlot: null };
+const state = { slots: [], settings: {}, banks: [], orders: [] };
 const $ = (sel) => document.querySelector(sel);
-const $$ = (sel) => document.querySelectorAll(sel);
 
 function toast(msg, type = 'ok') { 
   const el = document.createElement('div'); 
   el.className = 'toast ' + type; 
-  el.textContent = msg; 
-  const wrap = $('#toastWrap');
-  if(wrap) wrap.appendChild(el); 
-  setTimeout(() => el.remove(), 3500); 
-}
-function money(n) { return Number(n || 0).toLocaleString('en-US'); }
-function escape(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
-
-function getRate(amount) {
-  const isOffer = state.settings.isOfferActive;
-  const base = isOffer ? (state.settings.offerRate || 126) : (state.settings.baseRate || 125);
-  const step = state.settings.rateStep || 1;
-  if (!amount || amount < 100) return 0;
-  if (amount <= 500) return base;
-  return base + Math.floor((amount - 500) / 100) * step;
+  el.innerText = msg; 
+  el.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);background:var(--bg2);border:1px solid var(--neon);padding:10px 20px;border-radius:8px;color:#fff;z-index:9999;font-weight:bold;';
+  document.body.appendChild(el); 
+  setTimeout(() => el.remove(), 3000); 
 }
 
 window.addEventListener('DOMContentLoaded', () => {
   if (API.token) loadData();
+  else showLogin();
 });
 
-function showLogin() { 
-  const li = $('#loginScreen'); if(li) li.style.display = 'flex'; 
-  const m = $('#mainApp'); if(m) m.style.display = 'none'; 
-}
-function showMain() { 
-  const li = $('#loginScreen'); if(li) li.style.display = 'none'; 
-  const m = $('#mainApp'); if(m) m.style.display = 'block'; 
-}
+function showLogin() { $('#loginScreen').style.display = 'grid'; $('#mainApp').style.display = 'none'; }
+function showMain() { $('#loginScreen').style.display = 'none'; $('#mainApp').style.display = 'block'; }
 
-const loginForm = $('#loginForm');
-if (loginForm) {
-  loginForm.addEventListener('submit', async (e) => {
-    e.preventDefault(); 
-    const btn = e.target.querySelector('button[type="submit"]');
-    btn.disabled = true; btn.textContent = 'Logging in...';
-    try { 
-      const { t } = await API.login(e.target.u.value.trim(), e.target.p.value); 
-      API.token = t; localStorage.setItem('bp_token', t); 
-      toast('✅ Login successful'); await loadData(); 
-    } catch (err) { 
-      toast('❌ ' + err.message, 'err'); btn.disabled = false; btn.textContent = 'Login →'; 
-    }
-  });
-}
+// LOGIN
+$('#loginForm').addEventListener('submit', async (e) => {
+  e.preventDefault(); 
+  const btn = e.target.querySelector('button');
+  btn.innerText = 'WAIT...';
+  try { 
+    const { t } = await API.login(e.target.u.value.trim(), e.target.p.value); 
+    localStorage.setItem('bp_token', t); 
+    await loadData(); 
+  } catch (err) { 
+    toast('❌ ' + err.message); btn.innerText = 'LOGIN';
+  }
+});
 
 async function loadData() {
   try {
     const d = await API.me();
     state.slots = d.slots || []; state.settings = d.settings || {};
     state.banks = d.banks || []; state.orders = d.orders || [];
-    if (state.selectedSlot === null && state.slots.length) state.selectedSlot = state.slots[0];
+    
     showMain(); 
     renderAll();
   } catch (err) { 
-    API.token = ''; localStorage.removeItem('bp_token'); showLogin(); 
-    if (err.message !== 'Please login') toast('❌ ' + err.message, 'err'); 
+    showLogin(); 
   }
 }
 
 function renderAll() { 
-  renderSlots(); 
-  updateRate(); 
-  renderBanks(); 
-  renderBankSelect(); 
-  setupNetworkSelect(); // Network Dropdown Setup
-}
+  // 1. Update Wallet Balance (from approved orders)
+  const totalApproved = state.orders.filter(o => o.status === 'approved').reduce((sum, o) => sum + Number(o.slot), 0);
+  $('#totalDeposits').innerText = totalApproved;
 
-function updateRate() {
-  const amountEl = $('#liveRateAmount'); 
-  const priceEl = $('#liveRatePrice');
-  if (!amountEl || !priceEl) return;
-  
-  if (!state.selectedSlot || state.selectedSlot < 100) { 
-    amountEl.textContent = '$0'; 
-    priceEl.textContent = '₹0/USDT'; 
-  } else { 
-    const rate = getRate(state.selectedSlot); 
-    amountEl.textContent = `$${state.selectedSlot}`; 
-    priceEl.textContent = `₹${rate}/USDT`; 
-  }
-}
+  // 2. Update Live Rate (Read from Admin Settings)
+  const isOffer = state.settings.isOfferActive;
+  const base = isOffer ? (state.settings.offerRate || 126) : (state.settings.baseRate || 125);
+  $('#liveRatePrice').innerText = base;
 
-function renderSlots() {
-  const grid = $('#slotGrid'); if (!grid) return;
-  grid.innerHTML = state.slots.map(s => {
-    const rate = getRate(s); const isSelected = state.selectedSlot === s;
-    return `<div class="slot ${isSelected ? 'selected' : ''}" data-slot="${s}">
-      <span class="slot-amt">$${s}</span>
-      <span class="slot-rate">₹${rate}</span>
-    </div>`;
-  }).join('');
-  
-  grid.querySelectorAll('.slot').forEach(el => el.addEventListener('click', () => {
-    state.selectedSlot = Number(el.dataset.slot); 
-    renderSlots(); 
-    updateRate();  
-  }));
-}
-
-// --- NETWORK SELECT & ADDRESS SHOW ---
-function setupNetworkSelect() {
-  const select = $('#networkSelect');
-  const details = $('#paymentDetails');
-  const addrText = $('#addressText');
-  const badge = $('#networkBadge');
-
-  if (select) {
-    select.addEventListener('change', (e) => {
-      const net = e.target.value;
-      if (!net) { details.style.display = 'none'; return; }
-      
-      let address = '';
-      if (net === 'TRC20') address = state.settings.trc20 || 'TYWTuvc8kCBbYm98frNgAkVhVrdR7hXPrh';
-      else if (net === 'BEP20') address = state.settings.bep20 || '0x7e0de6e0949cd79fbf87c38dd2b6b4ac49e6f28f';
-      else if (net === 'ERC20') address = state.settings.erc20 || '0x7e0de6e0949cd79fbf87c38dd2b6b4ac49e6f28f';
-      
-      addrText.textContent = address; 
-      badge.textContent = net; 
-      details.style.display = 'block'; // Address box open
-    });
-  }
-}
-
-const copyAddrBtn = $('#copyAddrBtn');
-if (copyAddrBtn) {
-  copyAddrBtn.addEventListener('click', () => {
-    const addr = $('#addressText').textContent;
-    if (!addr || addr === '-') return toast('Select network first', 'err');
-    navigator.clipboard.writeText(addr).then(() => toast('✅ Address Copied'));
-  });
+  // 3. Render Banks in Dropdown
+  renderBanks();
 }
 
 function renderBanks() {
-  const list = $('#banksList');
-  if (!list) return;
-  if (!state.banks.length) { list.innerHTML = '<p class="text-dim center-text text-sm" style="padding:20px 0;">No banks added yet</p>'; return; }
+  const list = $('#savedBanksList');
+  const sel = $('#bankSelect');
+  
+  if (!state.banks.length) {
+    list.innerHTML = '<p style="color:var(--danger); font-size:12px;">No banks added yet. Add below.</p>';
+    sel.innerHTML = '<option value="">No banks added</option>';
+    return;
+  }
+
   list.innerHTML = state.banks.map(b => `
-    <div class="list-item">
-      <div class="info"><strong>${escape(b.bank)} • ${escape(b.type)}</strong><small>${b.holder ? 'Name: ' + escape(b.holder) + ' | ' : ''}A/C ${escape(b.number)} • IFSC ${escape(b.ifsc)}</small></div>
-      <div class="row"><button class="btn btn-danger btn-sm" data-del-bank="${b.id}">Delete</button></div>
+    <div style="background:rgba(0,255,65,0.1); padding:10px; border-radius:8px; margin-bottom:5px; border:1px solid rgba(0,255,65,0.3);">
+      <strong style="color:var(--neon);">${b.bank}</strong> - ${b.number}
     </div>
   `).join('');
+
+  sel.innerHTML = state.banks.map(b => `<option value="${b.id}">${b.bank} - A/C ${b.number}</option>`).join('');
+}
+
+// ADD BANK
+$('#newBankForm').addEventListener('submit', async (e) => {
+  e.preventDefault(); const form = e.target; const btn = form.querySelector('button');
+  if (form.number.value.trim() !== form.confirmNumber.value.trim()) return toast('Account numbers do not match!');
   
-  list.querySelectorAll('[data-del-bank]').forEach(btn => btn.addEventListener('click', async () => {
-    if (!confirm('Delete?')) return;
-    try { await API.delBank(btn.dataset.delBank); toast('✅ Deleted'); await loadData(); } catch (e) { toast('❌ ' + e.message, 'err'); }
-  }));
+  btn.innerText = 'SAVING...';
+  try { 
+    await API.addBank({ 
+      type: 'Savings', number: form.number.value.trim(), 
+      bank: form.bank.value.trim(), ifsc: form.ifsc.value.trim().toUpperCase(), holder: form.holder.value.trim() 
+    }); 
+    toast('✅ Bank Added Successfully'); 
+    form.reset(); 
+    await loadData(); 
+  } catch (err) { toast('❌ ' + err.message); }
+  btn.innerText = 'SAVE BANK ACCOUNT';
+});
+
+// BOOK ORDER CLICK LOGIC
+window.bookOrder = function(amount) {
+  $('#selectedSlot').value = amount;
+  $('#payAmountText').innerText = `$${amount} USDT`;
+  
+  // Show Payment Section
+  const paySec = $('#paymentSection');
+  paySec.style.display = 'block';
+  
+  // Scroll down to payment section smoothly
+  paySec.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  
+  // Reset address
+  $('#addressBox').style.display = 'none';
+  $('#networkSelect').value = '';
 }
 
-function renderBankSelect() {
-  const sel = $('#bankSelect');
-  if (!sel) return;
-  if (!state.banks.length) { sel.innerHTML = '<option value="">No banks added. Add one first!</option>'; sel.disabled = true; }
-  else { sel.disabled = false; sel.innerHTML = state.banks.map(b => `<option value="${b.id}">${escape(b.bank)} - A/C ${escape(b.number)}</option>`).join(''); }
+// NETWORK SELECT LOGIC
+$('#networkSelect').addEventListener('change', (e) => {
+  const net = e.target.value;
+  const addrBox = $('#addressBox');
+  const addrText = $('#addressText');
+
+  if (!net) { addrBox.style.display = 'none'; return; }
+
+  let address = '';
+  if (net === 'TRC20') address = state.settings.trc20 || 'TYWTuvc8kCBbYm98frNgAkVhVrdR7hXPrh';
+  else if (net === 'BEP20') address = state.settings.bep20 || '0x7e0de6e0949cd79fbf87c38dd2b6b4ac49e6f28f';
+  else if (net === 'ERC20') address = state.settings.erc20 || '0x7e0de6e0949cd79fbf87c38dd2b6b4ac49e6f28f';
+
+  addrText.innerText = address;
+  addrBox.style.display = 'block';
+});
+
+// COPY ADDRESS
+window.copyAddress = function() {
+  const addr = $('#addressText').innerText;
+  if (!addr || addr === '-') return;
+  navigator.clipboard.writeText(addr).then(() => toast('✅ Address Copied'));
 }
 
-// --- ADD BANK FORM SHOW/HIDE ---
-const addBankBtn = $('#addBankBtn');
-const cancelBankBtn = $('#cancelBankBtn');
-if (addBankBtn) {
-  addBankBtn.addEventListener('click', () => { 
-    const f = $('#addBankForm'); 
-    f.style.display = (f.style.display === 'none' || f.style.display === '') ? 'block' : 'none'; 
-  });
-}
-if (cancelBankBtn) {
-  cancelBankBtn.addEventListener('click', () => { 
-    $('#addBankForm').style.display = 'none'; 
-  });
-}
+// SUBMIT FINAL ORDER
+$('#finalOrderForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const slot = Number($('#selectedSlot').value);
+  const bankId = $('#bankSelect').value;
+  const txid = $('#txid').value.trim();
+  const file = $('#receipt').files[0];
 
-// --- SAVE NEW BANK ---
-const newBankForm = $('#newBankForm');
-if (newBankForm) {
-  newBankForm.addEventListener('submit', async (e) => {
-    e.preventDefault(); const form = e.target; const btn = form.querySelector('button[type="submit"]');
-    let bankName = form.bank.value.trim();
-    
-    if (!bankName) return toast('Please enter bank name', 'err');
-    if (form.number.value.trim() !== form.confirmNumber.value.trim()) return toast('Account numbers do not match!', 'err');
+  if (!slot) return toast('Please select an order first');
+  if (!bankId) return toast('Please add a bank account');
+  if (!txid || !file) return toast('Please fill all details');
 
-    btn.disabled = true; btn.textContent = 'Saving...';
-    try { 
-      await API.addBank({ 
-        type: form.type.value, 
-        number: form.number.value.trim(), 
-        bank: bankName, 
-        ifsc: form.ifsc.value.trim().toUpperCase(),
-        holder: form.holder.value.trim() 
-      }); 
-      toast('✅ Bank added'); 
-      form.reset(); 
-      $('#addBankForm').style.display = 'none'; 
-      await loadData(); 
-    } catch (err) { 
-      toast('❌ ' + err.message, 'err'); 
-    }
-    btn.disabled = false; btn.textContent = 'Save Bank';
-  });
-}
+  const btn = e.target.querySelector('button');
+  btn.innerText = 'UPLOADING...';
 
-// --- SUBMIT ORDER ---
-const orderForm = $('#orderForm');
-if (orderForm) {
-  orderForm.addEventListener('submit', async (e) => {
-    e.preventDefault(); const form = e.target; const btn = form.querySelector('button[type="submit"]');
-    if (state.selectedSlot === null) return toast(`Select amount`, 'err');
-    if (!form.bankId.value) return toast('Add bank first', 'err');
-    const file = form.receipt.files[0]; if (!file) return toast('Upload screenshot', 'err');
-    
-    btn.disabled = true; btn.textContent = 'Uploading...';
-    const reader = new FileReader();
-    reader.onload = async (event) => {
-      try { 
-        await API.createOrder({ bankId: form.bankId.value, slot: state.selectedSlot, txid: form.txid.value.trim(), receipt: event.target.result }); 
-        toast('✅ Submitted'); form.reset(); await loadData(); 
-      } catch (err) { toast('❌ ' + err.message, 'err'); }
-      btn.disabled = false; btn.textContent = 'Submit Order →';
-    };
-    reader.readAsDataURL(file);
-  });
-}
-
-// --- UPDATE PASSWORD ---
-const updatePassForm = $('#updatePassForm');
-if (updatePassForm) {
-  updatePassForm.addEventListener('submit', async (e) => {
-    e.preventDefault(); const form = e.target; const btn = form.querySelector('button[type="submit"]');
-    btn.disabled = true; btn.textContent = 'Updating...';
+  const reader = new FileReader();
+  reader.onload = async (event) => {
     try {
-      await API.updatePass(form.oldP.value, form.newP.value);
-      toast('✅ Password updated successfully');
-      form.reset();
+      await API.createOrder({ bankId, slot, txid, receipt: event.target.result });
+      toast('✅ Order Submitted! Admin will verify shortly.');
+      $('#finalOrderForm').reset();
+      $('#paymentSection').style.display = 'none';
+      await loadData();
     } catch (err) {
-      toast('❌ ' + err.message, 'err');
+      toast('❌ ' + err.message);
     }
-    btn.disabled = false; btn.textContent = 'Update Password';
-  });
-}
+    btn.innerText = 'SUBMIT ORDER & GET INR';
+  };
+  reader.readAsDataURL(file);
+});
 
-// --- LOGOUT & TABS ---
-const logoutBtn = $('#logoutBtn');
-if(logoutBtn) logoutBtn.addEventListener('click', () => { localStorage.removeItem('bp_token'); location.reload(); });
+// LOGOUT
+$('#logoutBtn').addEventListener('click', () => {
+  localStorage.removeItem('bp_token');
+  location.reload();
+});
 
-$$('.tab').forEach(tab => tab.addEventListener('click', () => {
-  $$('.tab').forEach(t => t.classList.remove('active')); tab.classList.add('active');
-  $$('.tab-content').forEach(c => c.style.display = 'none'); 
-  const target = $('#tab-' + tab.dataset.tab); if(target) target.style.display = 'block';
-}));
+window.scrollToTop = function() {
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
