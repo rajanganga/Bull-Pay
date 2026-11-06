@@ -12,22 +12,15 @@ const DEF = {
     trc20: 'TYWTuvc8kCBbYm98frNgAkVhVrdR7hXPrh',
     bep20: '0x7e0de6e0949cd79fbf87c38dd2b6b4ac49e6f28f',
     erc20: '0x7e0de6e0949cd79fbf87c38dd2b6b4ac49e6f28f',
-    baseRate: 125,      
-    rateStep: 1,        
-    minSell: 100,       
-    offerRate: 126,
-    isOfferActive: false
+    baseRate: 125, rateStep: 1, minSell: 100, offerRate: 126, isOfferActive: false
   }, 
   logs: [], notifications: [] 
 };
 let D = fs.existsSync(FILE) ? JSON.parse(fs.readFileSync(FILE, 'utf8')) : DEF;
-if (!D.logs) D.logs = []; 
-if (!D.notifications) D.notifications = []; 
+if (!D.logs) D.logs = []; if (!D.notifications) D.notifications = []; 
 
 const defaultSet = DEF.settings;
-for (let key in defaultSet) {
-  if (D.settings[key] === undefined) D.settings[key] = defaultSet[key];
-}
+for (let key in defaultSet) { if (D.settings[key] === undefined) D.settings[key] = defaultSet[key]; }
 
 const SU = (process.env.SUPABASE_URL || '').replace(/\/$/, ''), SK = process.env.SUPABASE_KEY || '';
 const H = { apikey: SK, 'content-type': 'application/json' };
@@ -55,20 +48,17 @@ function send(res, code, obj) { res.writeHead(code, { 'content-type': 'applicati
 function page(res, f) {
   res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
   const p = [path.join(__dirname, 'public', f), path.join(__dirname, f)].find(x => fs.existsSync(x));
-  if(p) res.end(fs.readFileSync(p));
-  else { res.end('<h1>File not found</h1>'); }
+  if(p) res.end(fs.readFileSync(p)); else res.end('File not found');
 }
 function throttle(ip) { const f = fails[ip]; return f && f.n >= 10 && Date.now() - f.t < 300000; }
 function bad(ip) { const f = fails[ip] || { n: 0 }; fails[ip] = { n: f.n + 1, t: Date.now() }; }
 function logAction(userId, action, details = '') {
   D.logs.unshift({ id: uid(), userId, action, details, ts: Date.now() });
-  if (D.logs.length > 1000) D.logs = D.logs.slice(0, 1000);
-  save();
+  if (D.logs.length > 1000) D.logs = D.logs.slice(0, 1000); save();
 }
 function notify(userId, title, msg) {
   D.notifications.unshift({ id: uid(), userId, title, msg, read: false, ts: Date.now() });
-  if (D.notifications.length > 500) D.notifications = D.notifications.slice(0, 500);
-  save();
+  if (D.notifications.length > 500) D.notifications = D.notifications.slice(0, 500); save();
 }
 
 const server = http.createServer((req, res) => {
@@ -110,32 +100,30 @@ const server = http.createServer((req, res) => {
 
     if (s.role === 'admin') {
       if (r === 'admin/all') return send(res, 200, {
-        users: D.users.map(({ id, username, disabled }) => ({ id, username, disabled })),
+        users: D.users.map(({ id, username, disabled, mobile }) => ({ id, username, disabled, mobile })),
         banks: D.banks, orders: D.orders, settings: D.settings, logs: D.logs
       });
+      // NAYA: Admin Mobile Number add karega
       if (r === 'admin/user/add') {
-        const u = clean(b.u, 30), p = String(b.p || '');
+        const u = clean(b.u, 30), p = String(b.p || ''), m = clean(b.m, 15);
         if (u.length < 3 || p.length < 6) return send(res, 400, { e: 'ID min 3, password min 6' });
         if (D.users.some(x => x.username === u)) return send(res, 400, { e: 'ID already exists' });
-        const salt = uid(); D.users.push({ id: uid(), username: u, salt, hash: hash(p, salt), disabled: false });
+        const salt = uid(); D.users.push({ id: uid(), username: u, mobile: m, salt, hash: hash(p, salt), disabled: false });
         save(); return send(res, 200, {});
       }
       if (r === 'admin/user/pass') {
         const u = D.users.find(x => x.id === b.id);
         if (!u || String(b.p || '').length < 6) return send(res, 400, { e: 'Password min 6' });
         u.salt = uid(); u.hash = hash(b.p, u.salt); save();
-        for (const k in sessions) if (sessions[k].id === u.id) delete sessions[k];
         return send(res, 200, {});
       }
       if (r === 'admin/user/toggle') {
         const u = D.users.find(x => x.id === b.id); if (!u) return send(res, 404, { e: 'Not found' });
         u.disabled = !u.disabled; save();
-        if (u.disabled) for (const k in sessions) if (sessions[k].id === u.id) delete sessions[k];
         return send(res, 200, {});
       }
       if (r === 'admin/user/del') {
         D.users = D.users.filter(x => x.id !== b.id); D.banks = D.banks.filter(x => x.userId !== b.id); save();
-        for (const k in sessions) if (sessions[k].id === b.id) delete sessions[k];
         return send(res, 200, {});
       }
       if (r === 'admin/order') {
@@ -155,19 +143,7 @@ const server = http.createServer((req, res) => {
         return send(res, 200, {});
       }
       if (r === 'admin/settings') {
-        D.settings = { 
-          ...D.settings,
-          address: clean(b.address, 120), 
-          network: clean(b.network, 20) || 'TRC20',
-          trc20: clean(b.trc20, 120) || D.settings.trc20,
-          bep20: clean(b.bep20, 120) || D.settings.bep20,
-          erc20: clean(b.erc20, 120) || D.settings.erc20,
-          baseRate: Number(b.baseRate) || 125,
-          rateStep: Number(b.rateStep) || 1,
-          minSell: Number(b.minSell) || 100,
-          offerRate: Number(b.offerRate) || 126,
-          isOfferActive: b.isOfferActive === true || b.isOfferActive === 'true'
-        };
+        D.settings = { ...D.settings, ...b };
         save(); return send(res, 200, {});
       }
       return send(res, 404, { e: 'Not found' });
@@ -176,6 +152,7 @@ const server = http.createServer((req, res) => {
     const me = s.id;
     if (r === 'me') return send(res, 200, {
       slots: SLOTS, settings: D.settings,
+      user: { mobile: D.users.find(x => x.id === me)?.mobile || '' },
       banks: D.banks.filter(x => x.userId === me),
       orders: D.orders.filter(x => x.userId === me).reverse(),
       notifications: D.notifications.filter(x => x.userId === me).slice(0, 10)
@@ -194,9 +171,7 @@ const server = http.createServer((req, res) => {
     }
     if (r === 'bank/add') {
       const t = clean(b.type, 20), n = clean(b.number, 30), bk = clean(b.bank, 60), i = clean(b.ifsc, 11).toUpperCase(), h = clean(b.holder, 50);
-      if (!t || !/^\d{6,25}$/.test(n) || !bk || !/^[A-Z]{4}0[A-Z0-9]{6}$/.test(i) || h.length < 3) {
-        return send(res, 400, { e: 'Please fill valid details' });
-      }
+      if (!t || !/^\d{6,25}$/.test(n) || !bk || !/^[A-Z]{4}0[A-Z0-9]{6}$/.test(i) || h.length < 3) return send(res, 400, { e: 'Please fill valid details' });
       D.banks.push({ id: uid(), userId: me, type: t, number: n, bank: bk, ifsc: i, holder: h }); save(); 
       logAction(me, 'Bank Added', `${bk} (${n.slice(-4)})`);
       return send(res, 200, {});
@@ -213,7 +188,7 @@ const server = http.createServer((req, res) => {
       if (!bank) return send(res, 400, { e: 'Select valid bank' });
       if (b.slot < (D.settings.minSell || 100)) return send(res, 400, { e: `Minimum sell is $${D.settings.minSell}` });
       if (tx.length < 8) return send(res, 400, { e: 'Enter valid Transaction ID' });
-      if (D.orders.some(x => x.txid.toLowerCase() === tx.toLowerCase())) return send(res, 400, { e: 'This Transaction ID is already used' });
+      if (D.orders.some(x => x.txid.toLowerCase() === tx.toLowerCase())) return send(res, 400, { e: 'This TXID is already used' });
       
       let receipt = null;
       if (b.receipt && typeof b.receipt === 'string' && b.receipt.startsWith('data:image/')) {
