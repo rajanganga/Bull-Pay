@@ -3,190 +3,50 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
-  <meta name="theme-color" content="#05070A" />
-  <title>BullPay — Panel</title>
+  <title>BullPay — Wallet</title>
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800;900&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
 
-  <div class="toast-wrap" id="toastWrap"></div>
-
   <!-- LOGIN SCREEN -->
-  <div id="loginScreen" style="display:none; height: 100vh; place-items: center; padding: 20px;">
-    <div style="background:var(--card-bg); border:1px solid var(--neon); padding:30px; border-radius:16px; width:100%; max-width:400px;">
-      <h1 style="text-align:center; color:var(--neon); margin-bottom:20px;">Bull<span style="color:#fff">Pay</span></h1>
+  <div id="loginScreen" style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 20px;">
+    <div style="background: #0A0E17; border: 1px solid #00FF41; padding: 30px; border-radius: 10px; width: 100%; max-width: 400px;">
+      <h2 style="color: #00FF41; text-align: center; margin-bottom: 20px; font-family: 'Orbitron';">BULL PAY</h2>
       <form id="loginForm">
-        <div class="input-group"><label>User ID</label><input class="input-field" name="u" required /></div>
-        <div class="input-group"><label>Password</label><input class="input-field" name="p" type="password" required /></div>
-        <button type="submit" class="btn-book" style="width:100%; justify-content:center; padding:15px; font-size:16px;">LOGIN</button>
+        <input type="text" id="userId" placeholder="User ID" required style="width: 100%; padding: 12px; margin-bottom: 15px; background: #000; color: #fff; border: 1px solid #333; border-radius: 5px;" />
+        <input type="password" id="password" placeholder="Password" required style="width: 100%; padding: 12px; margin-bottom: 15px; background: #000; color: #fff; border: 1px solid #333; border-radius: 5px;" />
+        <button type="submit" style="width: 100%; padding: 12px; background: #00FF41; color: #000; font-weight: bold; border: none; border-radius: 5px; font-family: 'Orbitron';">LOGIN</button>
       </form>
+      <p id="loginError" style="color: #FF003C; text-align: center; margin-top: 10px; font-size: 14px;"></p>
     </div>
   </div>
 
-  <!-- MAIN APP -->
-  <div id="mainApp" style="display:none;">
-    
-    <!-- SECTION 1: HOME -->
-    <div id="section-home">
-      <div class="top-header">
-        <div class="user-info">
-          <div class="user-avatar">👤</div>
-          <div>
-            <div class="user-name">BULL PAY</div>
-            <div class="user-sub">My Profile</div>
-          </div>
-        </div>
-        <button id="logoutBtn" style="background:transparent; border:1px solid var(--danger); color:var(--danger); padding:5px 10px; border-radius:5px; font-family:'Orbitron';">LOGOUT</button>
-      </div>
-
-      <div class="wallet-row">
-        <div class="wallet-box">
-          <div class="wallet-title">Main Wallet <span>💼</span></div>
-          <div class="wallet-amt">₹<span id="totalDeposits">0</span></div>
-        </div>
-        <div class="wallet-box commission">
-          <div class="wallet-title">Commission <span>💰</span></div>
-          <div class="wallet-amt">₹0.00</div>
-        </div>
-      </div>
-
-      <div class="main-panel">
-        <div class="form-card">
-          <div class="form-card-title">ADD YOUR BANK ACCOUNT</div>
-          <div id="savedBanksList" style="margin-bottom: 15px;"></div>
-
-          <form id="newBankForm">
-            <div class="input-group">
-              <label>CHOOSE BANK</label>
-              <div class="bank-selector">
-                <input type="text" class="input-field" name="bank" placeholder="Type Bank Name (e.g. SBI)" required style="border:none; padding:0; background:transparent;" />
-                <div class="bank-logos"><span>SBI</span><span>HDFC</span></div>
-              </div>
-            </div>
-            <div class="input-group"><label>HOLDER NAME</label><input type="text" class="input-field" name="holder" required /></div>
-            <div class="input-group"><label>ACCOUNT NUMBER</label><input type="text" class="input-field" name="number" required /></div>
-            <div class="input-group"><label>CONFIRM ACCOUNT NUMBER</label><input type="text" class="input-field" name="confirmNumber" required /></div>
-            <div class="input-group"><label>IFSC CODE</label><input type="text" class="input-field" name="ifsc" required style="text-transform:uppercase;" /></div>
-            <button type="submit" class="btn-book" style="width:100%; justify-content:center; padding:15px;">SAVE BANK ACCOUNT</button>
-          </form>
-        </div>
-      </div>
+  <!-- MAIN APP SCREEN -->
+  <div id="mainApp" style="display: none; padding: 20px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+      <h2 style="color: #00FF41; font-family: 'Orbitron';">Dashboard</h2>
+      <button id="logoutBtn" style="padding: 8px 15px; background: #FF003C; color: #fff; border: none; border-radius: 5px;">Logout</button>
     </div>
 
-    <!-- SECTION 2: ORDERS -->
-    <div id="section-order" style="display:none; padding-top:20px;">
-      <div class="live-orders-header">
-        <div class="live-badge">LIVE ORDERS</div>
-        <div style="margin-left:auto; font-size:12px; color:var(--neon); font-weight:700;">Rate: ₹<span id="liveRatePrice">125</span>/USDT</div>
-      </div>
-
-      <div id="liveOrdersContainer">
-        <!-- Order 1 -->
-        <div class="order-card">
-          <div class="order-top"><div class="order-id">Order ID: 5865450837</div><div class="verify-badge">VERIFY</div></div>
-          <div class="order-mid">
-            <div class="usdt-amt">100.00 <span>USDT</span></div>
-            <div class="inr-amt" id="inr-100">₹0 <small>You Receive</small></div>
-          </div>
-          <div class="order-bottom"><div class="payout-from">Payout: <span>PARIMATCH</span></div><button class="btn-book" onclick="bookOrder(100)">BOOK ORDER</button></div>
-        </div>
-        
-        <!-- Order 2 -->
-        <div class="order-card">
-          <div class="order-top"><div class="order-id">Order ID: 6879509752</div><div class="verify-badge">VERIFY</div></div>
-          <div class="order-mid">
-            <div class="usdt-amt">300.00 <span>USDT</span></div>
-            <div class="inr-amt" id="inr-300">₹0 <small>You Receive</small></div>
-          </div>
-          <div class="order-bottom"><div class="payout-from">Payout: <span>1XBET</span></div><button class="btn-book" onclick="bookOrder(300)">BOOK ORDER</button></div>
-        </div>
-        
-        <!-- Order 3 -->
-        <div class="order-card">
-          <div class="order-top"><div class="order-id">Order ID: 6620524768</div><div class="verify-badge">VERIFY</div></div>
-          <div class="order-mid">
-            <div class="usdt-amt">500.00 <span>USDT</span></div>
-            <div class="inr-amt" id="inr-500">₹0 <small>You Receive</small></div>
-          </div>
-          <div class="order-bottom"><div class="payout-from">Payout: <span>1WIN</span></div><button class="btn-book" onclick="bookOrder(500)">BOOK ORDER</button></div>
-        </div>
-      </div>
-
-      <!-- PAYMENT SECTION -->
-      <div id="paymentSection" style="display:none; padding: 0 20px;">
-        <div class="form-card" style="border-color: var(--neon); margin-top:20px;">
-          <div class="form-card-title" style="display:flex; justify-content:space-between;">
-            <span>COMPLETE PAYMENT</span><span style="color:#fff;" id="payAmountText">$0</span>
-          </div>
-          
-          <div class="input-group">
-            <label>SELECT NETWORK</label>
-            <select class="input-field" id="networkSelect">
-              <option value="">-- Select Network --</option>
-              <option value="TRC20">TRC 20 (Tron)</option>
-              <option value="BEP20">BEP 20 (BSC)</option>
-              <option value="ERC20">ERC 20 (Ethereum)</option>
-            </select>
-          </div>
-
-          <div id="addressBox" style="display:none; background:rgba(0,255,65,0.1); border:1px dashed var(--neon); padding:15px; border-radius:8px; margin-bottom:15px;">
-            <div style="font-size:12px; color:var(--neon); font-weight:bold; margin-bottom:5px;">Send USDT to this address:</div>
-            <div class="payment-address" id="addressText">-</div>
-            <button class="btn-book" style="width:100%; justify-content:center;" onclick="copyAddress()">📋 COPY ADDRESS</button>
-          </div>
-
-          <form id="finalOrderForm">
-            <input type="hidden" id="selectedSlot" value="" />
-            <div class="input-group"><label>SELECT YOUR BANK</label><select class="input-field" id="bankSelect" required></select></div>
-            <div class="input-group"><label>TRANSACTION ID (TXID)</label><input type="text" class="input-field" id="txid" placeholder="Enter TXID" required /></div>
-            <div class="input-group"><label>PAYMENT SCREENSHOT</label><input type="file" class="input-field" id="receipt" accept="image/*" required /></div>
-            <button type="submit" class="btn-book" style="width:100%; justify-content:center; padding:15px; background:var(--neon);">SUBMIT ORDER</button>
-          </form>
-        </div>
-      </div>
+    <div style="background: #0A0E17; border: 1px solid #00FF41; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+      <h3 style="color: #00FF41; margin-bottom: 10px;">Wallet Balance</h3>
+      <h1 style="color: #fff; font-family: 'Orbitron';">₹<span id="balance">0</span></h1>
     </div>
 
-    <!-- SECTION 3: PROFILE -->
-    <div id="section-profile" style="display:none; padding: 20px;">
-      <div class="form-card">
-        <div class="form-card-title">MY PROFILE</div>
-        <div style="margin-bottom:15px;">
-          <label style="color:var(--text-dim); font-size:12px;">MOBILE NUMBER</label>
-          <div style="font-size:18px; font-weight:bold; color:#fff;" id="profileMobile">-</div>
-        </div>
-      </div>
-
-      <div class="form-card">
-        <div class="form-card-title">UPDATE PASSWORD</div>
-        <form id="updatePassForm">
-          <div class="input-group"><label>CURRENT PASSWORD</label><input type="password" class="input-field" name="oldP" required /></div>
-          <div class="input-group"><label>NEW PASSWORD</label><input type="password" class="input-field" name="newP" required /></div>
-          <button type="submit" class="btn-book" style="width:100%; justify-content:center; padding:15px;">UPDATE PASSWORD</button>
-        </form>
-      </div>
-
-      <div class="form-card">
-        <div class="form-card-title">SAVED BANKS</div>
-        <div id="profileBanksList"></div>
-      </div>
+    <div style="background: #0A0E17; border: 1px solid #00FF41; padding: 20px; border-radius: 10px;">
+      <h3 style="color: #00FF41; margin-bottom: 10px;">Add Bank Account</h3>
+      <form id="bankForm">
+        <input type="text" id="bankName" placeholder="Bank Name (e.g. SBI)" required style="width: 100%; padding: 10px; margin-bottom: 10px; background: #000; color: #fff; border: 1px solid #333;" />
+        <input type="text" id="holderName" placeholder="Account Holder Name" required style="width: 100%; padding: 10px; margin-bottom: 10px; background: #000; color: #fff; border: 1px solid #333;" />
+        <input type="text" id="accountNumber" placeholder="Account Number" required style="width: 100%; padding: 10px; margin-bottom: 10px; background: #000; color: #fff; border: 1px solid #333;" />
+        <input type="text" id="ifscCode" placeholder="IFSC Code" required style="width: 100%; padding: 10px; margin-bottom: 10px; background: #000; color: #fff; border: 1px solid #333;" />
+        <button type="submit" style="width: 100%; padding: 12px; background: #00FF41; color: #000; font-weight: bold; border: none; border-radius: 5px;">SAVE BANK</button>
+      </form>
+      <p id="bankMsg" style="color: #00FF41; text-align: center; margin-top: 10px; font-size: 14px;"></p>
     </div>
-
-    <!-- BOTTOM NAVIGATION -->
-    <div class="bottom-nav">
-      <div class="nav-item active" onclick="switchTab('home')" id="nav-home">
-        <div class="nav-icon">🏠</div> Home
-      </div>
-      <div class="nav-item" onclick="switchTab('order')" id="nav-order">
-        <div class="nav-icon">₹</div> Order
-      </div>
-      <div class="nav-item" onclick="switchTab('profile')" id="nav-profile">
-        <div class="nav-icon">👤</div> Profile
-      </div>
-    </div>
-
   </div>
 
-  <script src="app_v2.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>
