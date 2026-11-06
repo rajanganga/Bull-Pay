@@ -6,10 +6,10 @@ const API = {
     if (currentToken) headers['x-token'] = currentToken;
     const res = await fetch('/api/' + path, { method: 'POST', headers, body: body ? JSON.stringify(body) : undefined });
     const data = await res.json().catch(() => ({}));
+    
     if (res.status === 401) {
       localStorage.removeItem('bp_token');
-      document.getElementById('loginScreen').style.display = 'grid';
-      document.getElementById('mainApp').style.display = 'none';
+      showLogin();
       throw new Error("Session expired. Login again.");
     }
     if (!res.ok) throw new Error(data.e || 'Request failed');
@@ -18,18 +18,18 @@ const API = {
   login: (u, p) => API.req('login', { u, p }),
   me: () => API.req('me', {}),
   addBank: (b) => API.req('bank/add', b),
-  delBank: (id) => API.req('bank/del', { id }),
-  createOrder: (o) => API.req('order', o)
+  createOrder: (o) => API.req('order', o),
+  updatePass: (oldP, newP) => API.req('user/pass', { oldP, newP }) 
 };
 
-const state = { slots: [], settings: {}, banks: [], orders: [] };
+const state = { slots: [], settings: {}, banks: [], orders: [], user: {} };
 const $ = (sel) => document.querySelector(sel);
 
 function toast(msg, type = 'ok') { 
   const el = document.createElement('div'); 
   el.className = 'toast ' + type; 
   el.innerText = msg; 
-  el.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);background:var(--bg2);border:1px solid var(--neon);padding:10px 20px;border-radius:8px;color:#fff;z-index:9999;font-weight:bold;';
+  el.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#0A0E17;border:1px solid #00FF41;padding:10px 20px;border-radius:8px;color:#fff;z-index:9999;font-weight:bold;';
   document.body.appendChild(el); 
   setTimeout(() => el.remove(), 3000); 
 }
@@ -42,7 +42,6 @@ window.addEventListener('DOMContentLoaded', () => {
 function showLogin() { $('#loginScreen').style.display = 'grid'; $('#mainApp').style.display = 'none'; }
 function showMain() { $('#loginScreen').style.display = 'none'; $('#mainApp').style.display = 'block'; }
 
-// LOGIN
 $('#loginForm').addEventListener('submit', async (e) => {
   e.preventDefault(); 
   const btn = e.target.querySelector('button');
@@ -61,6 +60,7 @@ async function loadData() {
     const d = await API.me();
     state.slots = d.slots || []; state.settings = d.settings || {};
     state.banks = d.banks || []; state.orders = d.orders || [];
+    state.user = d.user || {};
     
     showMain(); 
     renderAll();
@@ -70,36 +70,68 @@ async function loadData() {
 }
 
 function renderAll() { 
-  // 1. Update Wallet Balance (from approved orders)
+  // Wallet & Rate
   const totalApproved = state.orders.filter(o => o.status === 'approved').reduce((sum, o) => sum + Number(o.slot), 0);
   $('#totalDeposits').innerText = totalApproved;
-
-  // 2. Update Live Rate (Read from Admin Settings)
+  
   const isOffer = state.settings.isOfferActive;
   const base = isOffer ? (state.settings.offerRate || 126) : (state.settings.baseRate || 125);
   $('#liveRatePrice').innerText = base;
 
-  // 3. Render Banks in Dropdown
+  // Profile Data
+  $('#profileMobile').innerText = state.user.mobile || 'Not set';
+
   renderBanks();
 }
 
 function renderBanks() {
-  const list = $('#savedBanksList');
+  const listHome = $('#savedBanksList');
+  const listProfile = $('#profileBanksList');
   const sel = $('#bankSelect');
   
   if (!state.banks.length) {
-    list.innerHTML = '<p style="color:var(--danger); font-size:12px;">No banks added yet. Add below.</p>';
-    sel.innerHTML = '<option value="">No banks added</option>';
+    if(listHome) listHome.innerHTML = '<p style="color:#FF003C; font-size:12px;">No banks added yet.</p>';
+    if(listProfile) listProfile.innerHTML = '<p style="color:#6C7A8F; font-size:12px;">No banks saved.</p>';
+    if(sel) sel.innerHTML = '<option value="">No banks added</option>';
     return;
   }
 
-  list.innerHTML = state.banks.map(b => `
+  const html = state.banks.map(b => `
     <div style="background:rgba(0,255,65,0.1); padding:10px; border-radius:8px; margin-bottom:5px; border:1px solid rgba(0,255,65,0.3);">
-      <strong style="color:var(--neon);">${b.bank}</strong> - ${b.number}
+      <strong style="color:#00FF41;">${b.bank}</strong> - ${b.number}<br>
+      <small style="color:#aaa;">${b.holder}</small>
     </div>
   `).join('');
 
-  sel.innerHTML = state.banks.map(b => `<option value="${b.id}">${b.bank} - A/C ${b.number}</option>`).join('');
+  if(listHome) listHome.innerHTML = html;
+  if(listProfile) listProfile.innerHTML = html;
+  if(sel) sel.innerHTML = state.banks.map(b => `<option value="${b.id}">${b.bank} - ${b.number}</option>`).join('');
+}
+
+// TAB SWITCHING LOGIC
+window.switchTab = function(tab) {
+  // Hide all sections
+  $('#section-home').style.display = 'none';
+  $('#section-order').style.display = 'none';
+  $('#section-profile').style.display = 'none';
+  
+  // Remove active class
+  $('#nav-home').classList.remove('active');
+  $('#nav-order').classList.remove('active');
+  $('#nav-profile').classList.remove('active');
+
+  // Show selected
+  if (tab === 'home') {
+    $('#section-home').style.display = 'block';
+    $('#nav-home').classList.add('active');
+  } else if (tab === 'order') {
+    $('#section-order').style.display = 'block';
+    $('#nav-order').classList.add('active');
+  } else if (tab === 'profile') {
+    $('#section-profile').style.display = 'block';
+    $('#nav-profile').classList.add('active');
+  }
+  window.scrollTo(0,0);
 }
 
 // ADD BANK
@@ -120,24 +152,19 @@ $('#newBankForm').addEventListener('submit', async (e) => {
   btn.innerText = 'SAVE BANK ACCOUNT';
 });
 
-// BOOK ORDER CLICK LOGIC
+// BOOK ORDER
 window.bookOrder = function(amount) {
   $('#selectedSlot').value = amount;
   $('#payAmountText').innerText = `$${amount} USDT`;
   
-  // Show Payment Section
   const paySec = $('#paymentSection');
   paySec.style.display = 'block';
-  
-  // Scroll down to payment section smoothly
   paySec.scrollIntoView({ behavior: 'smooth', block: 'center' });
   
-  // Reset address
   $('#addressBox').style.display = 'none';
   $('#networkSelect').value = '';
 }
 
-// NETWORK SELECT LOGIC
 $('#networkSelect').addEventListener('change', (e) => {
   const net = e.target.value;
   const addrBox = $('#addressBox');
@@ -154,14 +181,12 @@ $('#networkSelect').addEventListener('change', (e) => {
   addrBox.style.display = 'block';
 });
 
-// COPY ADDRESS
 window.copyAddress = function() {
   const addr = $('#addressText').innerText;
   if (!addr || addr === '-') return;
   navigator.clipboard.writeText(addr).then(() => toast('✅ Address Copied'));
 }
 
-// SUBMIT FINAL ORDER
 $('#finalOrderForm').addEventListener('submit', async (e) => {
   e.preventDefault();
   const slot = Number($('#selectedSlot').value);
@@ -180,24 +205,27 @@ $('#finalOrderForm').addEventListener('submit', async (e) => {
   reader.onload = async (event) => {
     try {
       await API.createOrder({ bankId, slot, txid, receipt: event.target.result });
-      toast('✅ Order Submitted! Admin will verify shortly.');
+      toast('✅ Order Submitted! Admin will verify.');
       $('#finalOrderForm').reset();
       $('#paymentSection').style.display = 'none';
       await loadData();
-    } catch (err) {
-      toast('❌ ' + err.message);
-    }
-    btn.innerText = 'SUBMIT ORDER & GET INR';
+    } catch (err) { toast('❌ ' + err.message); }
+    btn.innerText = 'SUBMIT ORDER';
   };
   reader.readAsDataURL(file);
 });
 
-// LOGOUT
+// UPDATE PASSWORD
+$('#updatePassForm').addEventListener('submit', async (e) => {
+  e.preventDefault(); const form = e.target;
+  try {
+    await API.updatePass(form.oldP.value, form.newP.value);
+    toast('✅ Password updated successfully');
+    form.reset();
+  } catch (err) { toast('❌ ' + err.message); }
+});
+
 $('#logoutBtn').addEventListener('click', () => {
   localStorage.removeItem('bp_token');
   location.reload();
 });
-
-window.scrollToTop = function() {
-  window.scrollTo({ top: 0, behavior: 'smooth' });
-      }
