@@ -70,17 +70,28 @@ async function loadData() {
 }
 
 function renderAll() { 
-  // Wallet & Rate
+  // 1. Wallet Balance
   const totalApproved = state.orders.filter(o => o.status === 'approved').reduce((sum, o) => sum + Number(o.slot), 0);
   $('#totalDeposits').innerText = totalApproved;
   
+  // 2. Dynamic Rate Calculation
   const isOffer = state.settings.isOfferActive;
   const base = isOffer ? (state.settings.offerRate || 126) : (state.settings.baseRate || 125);
   $('#liveRatePrice').innerText = base;
 
-  // Profile Data
+  // 3. Update Live Orders Amount
+  const inr100 = document.getElementById('inr-100');
+  const inr300 = document.getElementById('inr-300');
+  const inr500 = document.getElementById('inr-500');
+
+  if (inr100) inr100.innerHTML = `₹${(100 * base).toLocaleString('en-IN')} <small>You Receive</small>`;
+  if (inr300) inr300.innerHTML = `₹${(300 * base).toLocaleString('en-IN')} <small>You Receive</small>`;
+  if (inr500) inr500.innerHTML = `₹${(500 * base).toLocaleString('en-IN')} <small>You Receive</small>`;
+
+  // 4. Profile Data
   $('#profileMobile').innerText = state.user.mobile || 'Not set';
 
+  // 5. Render Banks
   renderBanks();
 }
 
@@ -108,19 +119,16 @@ function renderBanks() {
   if(sel) sel.innerHTML = state.banks.map(b => `<option value="${b.id}">${b.bank} - ${b.number}</option>`).join('');
 }
 
-// TAB SWITCHING LOGIC
+// TAB SWITCHING
 window.switchTab = function(tab) {
-  // Hide all sections
   $('#section-home').style.display = 'none';
   $('#section-order').style.display = 'none';
   $('#section-profile').style.display = 'none';
   
-  // Remove active class
   $('#nav-home').classList.remove('active');
   $('#nav-order').classList.remove('active');
   $('#nav-profile').classList.remove('active');
 
-  // Show selected
   if (tab === 'home') {
     $('#section-home').style.display = 'block';
     $('#nav-home').classList.add('active');
