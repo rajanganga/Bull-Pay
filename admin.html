@@ -66,8 +66,10 @@
           </div>
           <div id="addUserForm" class="hidden" style="margin-bottom:16px; background:rgba(0,255,65,0.05); padding:16px; border:1px solid var(--border-soft);">
             <form id="newUserForm" class="stack">
-              <label class="field"><span>Username</span><input class="input" name="u" required /></label>
-              <label class="field"><span>Password</span><input class="input" name="p" type="password" required /></label>
+  <label class="field"><span>Username</span><input class="input" name="u" required /></label>
+  <label class="field"><span>Password</span><input class="input" name="p" type="password" required /></label>
+  <label class="field"><span>Mobile Number (Optional)</span><input class="input" name="m" placeholder="e.g. 9214458..." /></label> <!-- NAYA -->
+  ...
               <div class="row">
                 <button class="btn btn-primary" type="submit">Create User</button>
                 <button class="btn btn-ghost" type="button" id="cancelUserBtn">Cancel</button>
@@ -338,7 +340,7 @@
     $('#newUserForm').addEventListener('submit', async (e) => {
       e.preventDefault(); const f = e.target;
       try { 
-        await A.req('admin/user/add', { u: f.u.value, p: f.p.value }); 
+            await A.req('admin/user/add', { u: f.u.value, p: f.p.value, m: f.m ? f.m.value : '' });  
         toast('✅ User created'); 
         f.reset(); 
         $('#addUserForm').classList.add('hidden'); 
