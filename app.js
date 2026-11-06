@@ -79,11 +79,9 @@ async function loadData() {
 }
 
 function renderAll() { 
-  // 1. Wallet
   const totalApproved = state.orders.filter(o => o.status === 'approved').reduce((sum, o) => sum + Number(o.slot), 0);
   const walletEl = $('#totalDeposits'); if (walletEl) walletEl.innerText = totalApproved;
   
-  // 2. Rate
   const isOffer = state.settings ? state.settings.isOfferActive : false;
   const rateVal = state.settings ? (state.settings.baseRate || 125) : 125;
   const offerVal = state.settings ? (state.settings.offerRate || 126) : 126;
@@ -91,17 +89,19 @@ function renderAll() {
   
   const rateEl = $('#liveRatePrice'); if (rateEl) rateEl.innerText = base;
 
-  // 3. Amounts
   const inr100 = document.getElementById('inr-100');
   const inr300 = document.getElementById('inr-300');
+  const inr500 = document.getElementById('inr-500');
+  const inr1000 = document.getElementById('inr-1000');
+
   if (inr100) inr100.innerText = `₹${(100 * base).toLocaleString('en-IN')}`;
   if (inr300) inr300.innerText = `₹${(300 * base).toLocaleString('en-IN')}`;
+  if (inr500) inr500.innerText = `₹${(500 * base).toLocaleString('en-IN')}`;
+  if (inr1000) inr1000.innerText = `₹${(1000 * base).toLocaleString('en-IN')}`;
 
-  // 4. Profile
   const mobEl = $('#profileMobile');
   if (mobEl) mobEl.innerText = (state.user && state.user.mobile) ? state.user.mobile : 'Not set';
 
-  // 5. Banks
   renderBanks();
 }
 
@@ -177,6 +177,13 @@ window.bookOrder = function(amount) {
     paySec.style.display = 'block';
     paySec.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
+}
+
+// NAYA: Manual Amount Book Karne ke liye
+window.bookManual = function() {
+  const amt = Number($('#manualAmt').value);
+  if (!amt || amt < 100) return toast('Minimum $100 required');
+  bookOrder(amt);
 }
 
 const netSelect = $('#networkSelect');
@@ -255,4 +262,4 @@ if(logoutBtn) {
     localStorage.removeItem('bp_token');
     location.reload();
   });
-}
+    }
