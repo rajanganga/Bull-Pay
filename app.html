@@ -68,11 +68,20 @@
     <div id="section-order" style="display: none; padding: 20px;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
         <div style="background: #00FF41; color: #000; font-family: 'Orbitron'; font-weight: bold; padding: 5px 10px; border-radius: 20px; font-size: 12px;">LIVE ORDERS</div>
-        <div style="color: #00FF41; font-weight: bold;">Rate: ₹<span id="liveRatePrice">125</span></div>
+        <div style="color: #00FF41; font-weight: bold;">Rate: ₹<span id="liveRatePrice">125</span>/USDT</div>
+      </div>
+
+      <!-- CUSTOM AMOUNT INPUT -->
+      <div style="background: #0A0E17; border: 1px dashed #00FF41; border-radius: 12px; padding: 15px; margin-bottom: 20px;">
+        <label style="font-size: 12px; color: #00FF41; display: block; margin-bottom: 5px;">ENTER MANUAL AMOUNT (MIN $100)</label>
+        <div style="display: flex; gap: 10px;">
+          <input type="number" id="manualAmt" placeholder="e.g. 200" min="100" style="flex: 1; padding: 12px; background: #000; color: #fff; border: 1px solid #333; border-radius: 8px;" />
+          <button onclick="bookManual()" style="background: #00FF41; color: #000; font-family: 'Orbitron'; font-weight: bold; border: none; padding: 0 20px; border-radius: 8px; cursor: pointer;">BOOK</button>
+        </div>
       </div>
 
       <!-- Order Card 1 -->
-      <div style="background: #0A0E17; border: 1px solid #333; border-radius: 12px; padding: 15px; margin-bottom: 15px; position: relative;">
+      <div style="background: #0A0E17; border: 1px solid #333; border-radius: 12px; padding: 15px; margin-bottom: 15px;">
         <div style="display: flex; justify-content: space-between; margin-bottom: 10px; border-bottom: 1px dashed #333; padding-bottom: 10px;">
           <div style="font-size: 12px; color: #6C7A8F;">Order ID: 5865450837</div>
           <div style="background: #FF003C; color: #fff; font-size: 10px; padding: 2px 6px; border-radius: 4px; font-weight: bold;">VERIFY</div>
@@ -106,6 +115,44 @@
         <div style="display: flex; justify-content: space-between; align-items: center;">
           <div style="font-size: 12px; color: #6C7A8F;">Payout: <span style="background: #222; padding: 2px 6px; border-radius: 4px; color: #fff;">1XBET</span></div>
           <button onclick="bookOrder(300)" style="background: #00FF41; color: #000; font-family: 'Orbitron'; font-weight: bold; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer;">BOOK ORDER</button>
+        </div>
+      </div>
+
+      <!-- Order Card 3 (500) -->
+      <div style="background: #0A0E17; border: 1px solid #333; border-radius: 12px; padding: 15px; margin-bottom: 15px;">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 10px; border-bottom: 1px dashed #333; padding-bottom: 10px;">
+          <div style="font-size: 12px; color: #6C7A8F;">Order ID: 6620524768</div>
+          <div style="background: #FF003C; color: #fff; font-size: 10px; padding: 2px 6px; border-radius: 4px; font-weight: bold;">VERIFY</div>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+          <div style="font-family: 'Orbitron'; font-size: 20px; font-weight: bold;">500.00 <span style="font-size: 12px; color: #00FF41;">USDT</span></div>
+          <div style="text-align: right;">
+            <div style="font-family: 'Orbitron'; font-size: 16px; color: #00FF41;" id="inr-500">₹0</div>
+            <div style="font-size: 10px; color: #6C7A8F;">You Receive</div>
+          </div>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <div style="font-size: 12px; color: #6C7A8F;">Payout: <span style="background: #222; padding: 2px 6px; border-radius: 4px; color: #fff;">1WIN</span></div>
+          <button onclick="bookOrder(500)" style="background: #00FF41; color: #000; font-family: 'Orbitron'; font-weight: bold; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer;">BOOK ORDER</button>
+        </div>
+      </div>
+
+      <!-- Order Card 4 (1000) -->
+      <div style="background: #0A0E17; border: 1px solid #333; border-radius: 12px; padding: 15px; margin-bottom: 15px;">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 10px; border-bottom: 1px dashed #333; padding-bottom: 10px;">
+          <div style="font-size: 12px; color: #6C7A8F;">Order ID: 2423890941</div>
+          <div style="background: #FF003C; color: #fff; font-size: 10px; padding: 2px 6px; border-radius: 4px; font-weight: bold;">VERIFY</div>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+          <div style="font-family: 'Orbitron'; font-size: 20px; font-weight: bold;">1000.00 <span style="font-size: 12px; color: #00FF41;">USDT</span></div>
+          <div style="text-align: right;">
+            <div style="font-family: 'Orbitron'; font-size: 16px; color: #00FF41;" id="inr-1000">₹0</div>
+            <div style="font-size: 10px; color: #6C7A8F;">You Receive</div>
+          </div>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <div style="font-size: 12px; color: #6C7A8F;">Payout: <span style="background: #222; padding: 2px 6px; border-radius: 4px; color: #fff;">BC.GAME</span></div>
+          <button onclick="bookOrder(1000)" style="background: #00FF41; color: #000; font-family: 'Orbitron'; font-weight: bold; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer;">BOOK ORDER</button>
         </div>
       </div>
 
