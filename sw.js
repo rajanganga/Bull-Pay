@@ -1,4 +1,4 @@
-const CACHE_NAME = 'bullpay-v48'; 
+const CACHE_NAME = 'bullpay-v100'; 
 const ASSETS = ['/', '/style.css', '/app.js'];
 
 self.addEventListener('install', (e) => {
