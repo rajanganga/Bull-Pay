@@ -12,7 +12,19 @@ const DEF = {
     trc20: 'TYWTuvc8kCBbYm98frNgAkVhVrdR7hXPrh',
     bep20: '0x7e0de6e0949cd79fbf87c38dd2b6b4ac49e6f28f',
     erc20: '0x7e0de6e0949cd79fbf87c38dd2b6b4ac49e6f28f',
-    baseRate: 125, rateStep: 1, minSell: 100, offerRate: 126, isOfferActive: false
+    
+    // RATE CONFIG
+    baseRate: 125,       // Clean Fund
+    rateStep: 1,         
+    minSell: 50,         // Diwali Offer min 50
+    
+    mixBase: 135,        // Mix Fund base
+    mixStep: 2,          // Mix fund increment
+    xxxBase: 150,        // XXX Fund base
+    xxxStep: 3,          // XXX fund increment
+
+    offerRate: 126, 
+    isOfferActive: false
   }, 
   logs: [], notifications: [] 
 };
@@ -103,7 +115,6 @@ const server = http.createServer((req, res) => {
         users: D.users.map(({ id, username, disabled, mobile }) => ({ id, username, disabled, mobile })),
         banks: D.banks, orders: D.orders, settings: D.settings, logs: D.logs
       });
-      // NAYA: Admin Mobile Number add karega
       if (r === 'admin/user/add') {
         const u = clean(b.u, 30), p = String(b.p || ''), m = clean(b.m, 15);
         if (u.length < 3 || p.length < 6) return send(res, 400, { e: 'ID min 3, password min 6' });
@@ -166,17 +177,15 @@ const server = http.createServer((req, res) => {
       if (!u || !eq(hash(String(b.oldP), u.salt), u.hash)) return send(res, 400, { e: 'Current password is incorrect' });
       if (String(b.newP || '').length < 6) return send(res, 400, { e: 'New password must be at least 6 characters' });
       u.salt = uid(); u.hash = hash(b.newP, u.salt); save();
-      logAction(me, 'Password Changed', 'User updated password');
       return send(res, 200, {});
     }
     if (r === 'bank/add') {
       const t = clean(b.type, 20), n = clean(b.number, 30), bk = clean(b.bank, 60), i = clean(b.ifsc, 11).toUpperCase(), h = clean(b.holder, 50);
       if (!t || !/^\d{6,25}$/.test(n) || !bk || !/^[A-Z]{4}0[A-Z0-9]{6}$/.test(i) || h.length < 3) return send(res, 400, { e: 'Please fill valid details' });
       D.banks.push({ id: uid(), userId: me, type: t, number: n, bank: bk, ifsc: i, holder: h }); save(); 
-      logAction(me, 'Bank Added', `${bk} (${n.slice(-4)})`);
       return send(res, 200, {});
     }
-    if (r === 'bank/del') { D.banks = D.banks.filter(x => !(x.id === b.id && x.userId === me)); save(); logAction(me, 'Bank Deleted', `ID: ${b.id}`); return send(res, 200, {}); }
+    if (r === 'bank/del') { D.banks = D.banks.filter(x => !(x.id === b.id && x.userId === me)); save(); return send(res, 200, {}); }
     
     if (r === 'order') {
       orderRate[me] = orderRate[me] || { n: 0, t: Date.now() };
@@ -186,7 +195,7 @@ const server = http.createServer((req, res) => {
       const user = D.users.find(x => x.id === me);
       const bank = D.banks.find(x => x.id === b.bankId && x.userId === me), tx = clean(b.txid, 100);
       if (!bank) return send(res, 400, { e: 'Select valid bank' });
-      if (b.slot < (D.settings.minSell || 100)) return send(res, 400, { e: `Minimum sell is $${D.settings.minSell}` });
+      if (b.slot < (D.settings.minSell || 50)) return send(res, 400, { e: `Minimum sell is $${D.settings.minSell}` });
       if (tx.length < 8) return send(res, 400, { e: 'Enter valid Transaction ID' });
       if (D.orders.some(x => x.txid.toLowerCase() === tx.toLowerCase())) return send(res, 400, { e: 'This TXID is already used' });
       
@@ -196,7 +205,8 @@ const server = http.createServer((req, res) => {
         receipt = b.receipt;
       }
       orderRate[me].n++;
-      D.orders.push({ id: uid(), userId: me, username: user.username, slot: b.slot, bank, txid: tx, receipt, status: 'pending', ts: Date.now() });
+      // Save fund type in order for admin reference
+      D.orders.push({ id: uid(), userId: me, username: user.username, slot: b.slot, fundType: b.fundType || 'Clean', bank, txid: tx, receipt, status: 'pending', ts: Date.now() });
       save(); logAction(me, 'Order Submitted', `$${b.slot}, TXN: ${tx}`);
       return send(res, 200, {});
     }
