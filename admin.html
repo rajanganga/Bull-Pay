@@ -6,272 +6,385 @@
   <title>BullPay — Admin</title>
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
-    body { background: #05070A; color: #fff; font-family: 'Rajdhani', sans-serif; margin: 0; padding: 0; }
+    :root {
+      --bg: #05070A; --panel: #0A0E17; --border: #1F2937;
+      --neon: #00FF41; --danger: #FF003C; --warn: #F59E0B;
+      --text: #E2E8F0; --text-dim: #94A3B8;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Rajdhani', sans-serif; }
+    body { background-color: var(--bg); color: var(--text); padding: 20px; }
     .hidden { display: none !important; }
-    input, select { width: 100%; padding: 12px; background: #000; color: #fff; border: 1px solid #333; border-radius: 8px; box-sizing: border-box; margin-bottom: 15px; font-family: 'Rajdhani'; font-size: 15px; }
-    button { background: #00FF41; color: #000; font-weight: bold; border: none; padding: 15px; border-radius: 8px; font-family: 'Orbitron'; cursor: pointer; width: 100%; }
-    .card { background: #0A0E17; border: 1px solid #333; border-radius: 12px; padding: 20px; margin-bottom: 20px; }
-    .title { font-family: 'Orbitron'; color: #00FF41; margin-top: 0; margin-bottom: 15px; font-size: 16px; }
-    .row { display: flex; gap: 15px; }
-    .row > div { flex: 1; }
-    .tabs { display: flex; gap: 10px; margin-bottom: 20px; }
-    .tab { flex: 1; padding: 10px; text-align: center; background: #0A0E17; border: 1px solid #333; border-radius: 8px; cursor: pointer; font-family: 'Orbitron'; color: #6C7A8F; }
-    .tab.active { background: #00FF41; color: #000; border-color: #00FF41; }
+    
+    /* LOGIN SCREEN */
+    #adminLogin { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 90vh; }
+    .login-box { background: var(--panel); border: 1px solid var(--neon); padding: 40px; border-radius: 12px; width: 100%; max-width: 400px; box-shadow: 0 0 30px rgba(0,255,65,0.2); text-align: center; }
+    .login-box h1 { color: var(--neon); font-family: 'Orbitron'; margin-bottom: 20px; font-size: 24px; }
+    .input-field { width: 100%; padding: 12px; background: #000; border: 1px solid #333; color: #fff; border-radius: 8px; margin-bottom: 15px; font-size: 16px; }
+    .btn { width: 100%; padding: 15px; background: var(--neon); color: #000; font-family: 'Orbitron'; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; }
+    .btn:hover { background: #00cc34; }
+
+    /* MAIN APP */
+    #adminApp { max-width: 900px; margin: 0 auto; }
+    .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 15px; }
+    .logo { font-family: 'Orbitron'; color: var(--neon); font-size: 22px; font-weight: bold; }
+    .btn-logout { background: transparent; border: 1px solid var(--danger); color: var(--danger); padding: 8px 15px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+    
+    /* TABS */
+    .tabs { display: flex; gap: 10px; margin-bottom: 20px; overflow-x: auto; }
+    .tab { flex: 1; padding: 12px; background: var(--panel); border: 1px solid var(--border); color: var(--text-dim); border-radius: 8px; cursor: pointer; font-family: 'Orbitron'; font-size: 13px; white-space: nowrap; }
+    .tab.active { background: var(--neon); color: #000; border-color: var(--neon); }
+
+    /* CARDS */
+    .card { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 20px; }
+    .card-title { font-family: 'Orbitron'; color: var(--neon); font-size: 16px; margin-bottom: 15px; border-bottom: 1px solid var(--border); padding-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+    
+    /* LISTS */
+    .list-item { background: #000; border: 1px solid var(--border); padding: 15px; border-radius: 8px; margin-bottom: 10px; }
+    .row { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+    .btn-sm { padding: 6px 12px; font-size: 12px; border-radius: 4px; font-weight: bold; cursor: pointer; border: none; }
+    .btn-approve { background: var(--neon); color: #000; }
+    .btn-reject { background: var(--danger); color: #fff; }
+    .btn-del { background: transparent; border: 1px solid var(--danger); color: var(--danger); }
+    
+    /* BADGES */
+    .badge { padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; }
+    .b-pending { background: rgba(245,158,11,0.2); color: var(--warn); }
+    .b-approved { background: rgba(0,255,65,0.2); color: var(--neon); }
+    .b-rejected { background: rgba(255,0,60,0.2); color: var(--danger); }
+    
+    /* FORM */
+    .form-row { display: flex; gap: 15px; margin-bottom: 15px; flex-wrap: wrap; }
+    .form-group { flex: 1; min-width: 200px; }
+    .form-group label { display: block; color: var(--text-dim); font-size: 12px; margin-bottom: 5px; }
+    
+    /* TOAST */
+    .toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #0A0E17; border: 1px solid var(--neon); color: #fff; padding: 12px 24px; border-radius: 8px; font-weight: bold; z-index: 9999; display: none; }
   </style>
 </head>
 <body>
 
-  <!-- LOGIN SCREEN -->
-  <div id="adminLogin" style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 20px;">
-    <div class="card" style="width: 100%; max-width: 400px; border-color: #00FF41;">
-      <h1 class="title" style="text-align: center; font-size: 24px;">BULL PAY ADMIN</h1>
-      <form id="adminLoginForm">
-        <input type="password" name="p" placeholder="Admin Password" required />
-        <button type="submit">LOGIN</button>
-      </form>
+  <div id="toast" class="toast"></div>
+
+  <!-- LOGIN -->
+  <div id="adminLogin">
+    <div class="login-box">
+      <h1>BULLPAY ADMIN</h1>
+      <input type="password" id="adminPass" class="input-field" placeholder="Enter Admin Password" />
+      <button class="btn" onclick="doAdminLogin()">LOGIN</button>
     </div>
   </div>
 
   <!-- MAIN APP -->
-  <div id="adminApp" class="hidden" style="padding: 20px; max-width: 800px; margin: 0 auto;">
-    
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-      <h1 class="title" style="margin: 0;">ADMIN PANEL</h1>
-      <button id="adminLogout" style="width: auto; padding: 8px 15px; background: transparent; border: 1px solid #FF003C; color: #FF003C;">LOGOUT</button>
+  <div id="adminApp" class="hidden">
+    <div class="header">
+      <div class="logo">BULLPAY ADMIN</div>
+      <button class="btn-logout" onclick="logoutAdmin()">LOGOUT</button>
     </div>
 
     <!-- TABS -->
     <div class="tabs">
-      <div class="tab active" data-tab="orders" onclick="switchAdminTab('orders')">Orders</div>
-      <div class="tab" data-tab="users" onclick="switchAdminTab('users')">Users</div>
-      <div class="tab" data-tab="settings" onclick="switchAdminTab('settings')">Settings</div>
+      <div class="tab active" data-tab="orders" onclick="switchAdminTab('orders')">📋 Orders</div>
+      <div class="tab" data-tab="users" onclick="switchAdminTab('users')">👥 Users & Banks</div>
+      <div class="tab" data-tab="logs" onclick="switchAdminTab('logs')">📜 Logs</div>
+      <div class="tab" data-tab="settings" onclick="switchAdminTab('settings')">⚙️ Settings</div>
     </div>
 
     <!-- ORDERS TAB -->
     <div id="tab-orders" class="tab-content">
       <div class="card">
-        <h2 class="title">ALL ORDERS</h2>
-        <div id="adminOrders"></div>
+        <div class="card-title">All Orders</div>
+        <div class="form-row" style="margin-bottom: 15px;">
+          <input type="text" id="searchOrders" class="input-field" placeholder="Search Username or TXID..." style="margin-bottom: 0;" />
+          <select id="filterStatus" class="input-field" style="margin-bottom: 0;">
+            <option value="all">All Status</option>
+            <option value="pending">Pending</option>
+            <option value="approved">Approved</option>
+            <option value="rejected">Rejected</option>
+          </select>
+        </div>
+        <div id="adminOrdersList"></div>
       </div>
     </div>
 
     <!-- USERS TAB -->
     <div id="tab-users" class="tab-content hidden">
       <div class="card">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-          <h2 class="title" style="margin: 0;">USERS</h2>
-          <button onclick="document.getElementById('addUserForm').classList.toggle('hidden')" style="width: auto; padding: 5px 10px; font-size: 12px;">+ ADD USER</button>
+        <div class="card-title">
+          <span>Users List</span>
+          <button class="btn-sm btn-approve" onclick="document.getElementById('addUserForm').classList.toggle('hidden')">+ ADD USER</button>
         </div>
-        
-        <div id="addUserForm" class="hidden" style="background: rgba(0,255,65,0.05); padding: 15px; border: 1px dashed #00FF41; margin-bottom: 20px;">
-          <form id="newUserForm">
-            <input type="text" name="u" placeholder="Username" required />
-            <input type="password" name="p" placeholder="Password" required />
-            <input type="text" name="m" placeholder="Mobile Number (Optional)" />
-            <div class="row">
-              <button type="submit">CREATE</button>
-              <button type="button" onclick="document.getElementById('addUserForm').classList.add('hidden')" style="background: transparent; border: 1px solid #333; color: #fff;">CANCEL</button>
-            </div>
-          </form>
+        <div id="addUserForm" class="hidden" style="background: rgba(0,255,65,0.05); padding: 15px; border: 1px dashed var(--neon); margin-bottom: 20px;">
+          <div class="form-row">
+            <div class="form-group"><label>Username</label><input type="text" id="newUserId" class="input-field" /></div>
+            <div class="form-group"><label>Password</label><input type="password" id="newUserPass" class="input-field" /></div>
+            <div class="form-group"><label>Mobile No.</label><input type="text" id="newUserMob" class="input-field" /></div>
+          </div>
+          <div class="row">
+            <button class="btn-sm btn-approve" onclick="createUser()">CREATE USER</button>
+            <button class="btn-sm btn-del" onclick="document.getElementById('addUserForm').classList.add('hidden')">CANCEL</button>
+          </div>
         </div>
-        <div id="adminUsers"></div>
+        <div id="adminUsersList"></div>
+      </div>
+    </div>
+
+    <!-- LOGS TAB -->
+    <div id="tab-logs" class="tab-content hidden">
+      <div class="card">
+        <div class="card-title">User Activity Logs</div>
+        <div id="adminLogsList"></div>
       </div>
     </div>
 
     <!-- SETTINGS TAB -->
     <div id="tab-settings" class="tab-content hidden">
       <div class="card">
-        <h2 class="title">RATE CONFIGURATION</h2>
-        <form id="settingsForm">
-          
-          <div class="row">
-            <div>
-              <label style="font-size:12px; color:#6C7A8F;">CLEAN FUND (Base)</label>
-              <input type="number" name="baseRate" required />
-            </div>
-            <div>
-              <label style="font-size:12px; color:#6C7A8F;">CLEAN STEP</label>
-              <input type="number" name="rateStep" required />
-            </div>
-            <div>
-              <label style="font-size:12px; color:#6C7A8F;">OFFER RATE</label>
-              <input type="number" name="offerRate" />
-            </div>
+        <div class="card-title">Rate Configuration</div>
+        <div class="form-row">
+          <div class="form-group"><label>Base Rate (₹)</label><input type="number" id="setBaseRate" class="input-field" /></div>
+          <div class="form-group"><label>Rate Step (₹)</label><input type="number" id="setRateStep" class="input-field" /></div>
+          <div class="form-group"><label>Offer Rate (₹)</label><input type="number" id="setOfferRate" class="input-field" /></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>Min Sell (USDT)</label><input type="number" id="setMinSell" class="input-field" /></div>
+          <div class="form-group">
+            <label>Enable Offer</label>
+            <select id="setIsOfferActive" class="input-field">
+              <option value="false">No</option>
+              <option value="true">Yes</option>
+            </select>
           </div>
-
-          <div class="row" style="margin-top: 15px;">
-            <div>
-              <label style="font-size:12px; color:#6C7A8F;">MIX FUND (Base)</label>
-              <input type="number" name="mixBase" required />
-            </div>
-            <div>
-              <label style="font-size:12px; color:#6C7A8F;">MIX STEP</label>
-              <input type="number" name="mixStep" required />
-            </div>
-            <div>
-              <label style="font-size:12px; color:#6C7A8F;">XXX FUND (Base)</label>
-              <input type="number" name="xxxBase" required />
-            </div>
-            <div>
-              <label style="font-size:12px; color:#6C7A8F;">XXX STEP</label>
-              <input type="number" name="xxxStep" required />
-            </div>
-          </div>
-
-          <div class="row" style="margin-top: 15px; margin-bottom: 15px;">
-            <div>
-              <label style="font-size:12px; color:#6C7A8F;">MIN SELL (USDT)</label>
-              <input type="number" name="minSell" required />
-            </div>
-            <div style="display: flex; align-items: center; gap: 10px; margin-top: 20px;">
-              <input type="checkbox" name="isOfferActive" id="isOfferActive" style="width: 20px; height: 20px; margin: 0;" />
-              <label for="isOfferActive" style="color: #00FF41; font-weight: bold; margin: 0;">ENABLE OFFER</label>
-            </div>
-          </div>
-
-          <h2 class="title" style="margin-top: 30px;">NETWORK ADDRESSES</h2>
-          <label style="font-size:12px; color:#6C7A8F;">TRC 20</label>
-          <input type="text" name="trc20" required />
-          <label style="font-size:12px; color:#6C7A8F;">BEP 20</label>
-          <input type="text" name="bep20" required />
-          <label style="font-size:12px; color:#6C7A8F;">ERC 20</label>
-          <input type="text" name="erc20" required />
-
-          <button type="submit" style="margin-top: 20px;">SAVE ALL SETTINGS</button>
-        </form>
+        </div>
+        
+        <div class="card-title" style="margin-top: 20px;">Network Addresses</div>
+        <div class="form-group"><label>TRC 20</label><input type="text" id="setTrc20" class="input-field" /></div>
+        <div class="form-group"><label>BEP 20</label><input type="text" id="setBep20" class="input-field" /></div>
+        <div class="form-group"><label>ERC 20</label><input type="text" id="setErc20" class="input-field" /></div>
+        
+        <button class="btn" style="margin-top: 10px;" onclick="saveSettings()">SAVE SETTINGS</button>
       </div>
     </div>
 
   </div>
 
   <script>
-    const A = { 
-      token: localStorage.getItem('bp_admin') || '', 
-      async req(path, body) { 
-        const h = { 'Content-Type': 'application/json' }; 
-        if (this.token) h['x-token'] = this.token; 
-        const r = await fetch('/api/' + path, { method: 'POST', headers: h, body: body ? JSON.stringify(body) : undefined }); 
-        const d = await r.json().catch(() => ({})); 
-        if (!r.ok) throw new Error(d.e || 'Error'); 
-        return d; 
-      } 
-    };
-
+    // API Base
+    const API_BASE = '/api/';
+    let adminToken = localStorage.getItem('bp_admin') || '';
     let adminState = { users: [], banks: [], orders: [], settings: {}, logs: [] };
 
-    window.switchAdminTab = function(tab) {
-      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-      document.querySelector(`.tab[data-tab="${tab}"]`).classList.add('active');
-      document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
-      document.getElementById('tab-' + tab).classList.remove('hidden');
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.innerText = msg;
+      t.style.display = 'block';
+      setTimeout(() => t.style.display = 'none', 3000);
     }
 
-    async function loadAll() {
+    // API Request
+    async function apiReq(path, body) {
+      const headers = { 'Content-Type': 'application/json' };
+      if (adminToken) headers['x-token'] = adminToken;
+      const res = await fetch(API_BASE + path, { method: 'POST', headers, body: body ? JSON.stringify(body) : undefined });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.e || 'Error');
+      return data;
+    }
+
+    // Login
+    async function doAdminLogin() {
+      const pass = document.getElementById('adminPass').value;
       try {
-        const d = await A.req('admin/all', {}); 
-        adminState = d;
-        renderOrders(); renderUsers(); fillSettings();
-        document.getElementById('adminLogin').style.display = 'none';
+        const res = await apiReq('admin/login', { p: pass });
+        adminToken = res.t;
+        localStorage.setItem('bp_admin', adminToken);
+        document.getElementById('adminLogin').classList.add('hidden');
         document.getElementById('adminApp').classList.remove('hidden');
-      } catch (e) { 
-        alert('Load failed: ' + e.message);
-        localStorage.removeItem('bp_admin'); location.reload();
+        loadAdminData();
+      } catch (err) {
+        showToast('❌ ' + err.message);
       }
     }
 
+    function logoutAdmin() {
+      localStorage.removeItem('bp_admin');
+      location.reload();
+    }
+
+    // Load Data
+    async function loadAdminData() {
+      try {
+        const data = await apiReq('admin/all', {});
+        adminState = data;
+        renderOrders();
+        renderUsers();
+        renderLogs();
+        fillSettings();
+      } catch (err) {
+        showToast('❌ Load failed: ' + err.message);
+        if (err.message.includes('login')) logoutAdmin();
+      }
+    }
+
+    // Tabs Logic
+    function switchAdminTab(tabName) {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelector(`.tab[data-tab="${tabName}"]`).classList.add('active');
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+      document.getElementById('tab-' + tabName).classList.remove('hidden');
+    }
+
+    // RENDER ORDERS
     function renderOrders() {
-      const wrap = document.getElementById('adminOrders');
-      if (!adminState.orders.length) { wrap.innerHTML = '<p style="color:#6C7A8F;">No orders yet.</p>'; return; }
-      wrap.innerHTML = adminState.orders.map(o => `
-        <div style="border: 1px solid #333; padding: 15px; border-radius: 8px; margin-bottom: 10px;">
-          <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
-            <div><strong>$${o.slot} (${o.fundType || 'Clean'})</strong> - ${o.username}</div>
-            <div style="color: ${o.status==='approved'?'#00FF41':o.status==='pending'?'#FFB000':'#FF003C'}; font-weight: bold; text-transform: uppercase;">${o.status}</div>
+      const wrap = document.getElementById('adminOrdersList');
+      const query = (document.getElementById('searchOrders').value || '').toLowerCase();
+      const filter = document.getElementById('filterStatus').value;
+
+      let filtered = adminState.orders;
+      if (filter !== 'all') filtered = filtered.filter(o => o.status === filter);
+      if (query) filtered = filtered.filter(o => (o.username || '').toLowerCase().includes(query) || (o.txid || '').toLowerCase().includes(query));
+
+      if (!filtered.length) { wrap.innerHTML = '<p style="color:#6C7A8F; text-align:center;">No orders found.</p>'; return; }
+
+      wrap.innerHTML = filtered.map(o => `
+        <div class="list-item">
+          <div class="row">
+            <div>
+              <div style="font-size: 16px; font-weight: bold; color: #fff;">$${o.slot} — ${o.username}</div>
+              <div style="font-size: 12px; color: var(--text-dim); margin-top: 4px;">TXN: ${o.txid} | ${new Date(o.ts).toLocaleString()}</div>
+            </div>
+            <div class="row">
+              ${o.status === 'pending' ? `
+                <button class="btn-sm btn-approve" onclick="setOrderStatus('${o.id}', 'approved')">Approve</button>
+                <button class="btn-sm btn-reject" onclick="setOrderStatus('${o.id}', 'rejected')">Reject</button>
+              ` : `<span class="badge b-${o.status}">${o.status.toUpperCase()}</span>`}
+              <button class="btn-sm btn-del" onclick="deleteOrder('${o.id}')">🗑️</button>
+            </div>
           </div>
-          <div style="font-size: 12px; color: #6C7A8F; margin-bottom: 10px;">TXN: ${o.txid} | Date: ${new Date(o.ts).toLocaleString()}</div>
-          ${o.receipt ? `<img src="${o.receipt}" style="max-height: 100px; border-radius: 5px; border: 1px solid #333; margin-bottom: 10px;" />` : ''}
-          <div style="display: flex; gap: 10px;">
-            ${o.status === 'pending' ? `
-              <button onclick="setStatus('${o.id}', 'approved')" style="background:#00FF41; color:#000; padding:5px; flex:1;">APPROVE</button>
-              <button onclick="setStatus('${o.id}', 'rejected')" style="background:#FF003C; color:#fff; padding:5px; flex:1;">REJECT</button>
-            ` : ''}
-            <button onclick="delOrder('${o.id}')" style="background:transparent; border:1px solid #FF003C; color:#FF003C; padding:5px; flex:1;">DELETE</button>
-          </div>
+          ${o.receipt ? `<div style="margin-top: 10px;"><img src="${o.receipt}" style="max-height: 80px; border-radius: 4px; border: 1px solid var(--border);" /></div>` : ''}
         </div>
       `).join('');
     }
 
-    window.setStatus = async (id, status) => {
-      await A.req('admin/order', { id, status }); loadAll();
-    }
-    window.delOrder = async (id) => {
-      if(!confirm('Delete this order?')) return;
-      await A.req('admin/order/del', { id }); loadAll();
+    async function setOrderStatus(id, status) {
+      try { await apiReq('admin/order', { id, status }); showToast('✅ Order ' + status); loadAdminData(); } catch (e) { showToast('❌ ' + e.message); }
     }
 
+    async function deleteOrder(id) {
+      if (!confirm('Are you sure you want to delete this order?')) return;
+      try { await apiReq('admin/order/del', { id }); showToast('✅ Order deleted'); loadAdminData(); } catch (e) { showToast('❌ ' + e.message); }
+    }
+
+    // RENDER USERS
     function renderUsers() {
-      const wrap = document.getElementById('adminUsers');
-      if (!adminState.users.length) { wrap.innerHTML = '<p style="color:#6C7A8F;">No users yet.</p>'; return; }
-      wrap.innerHTML = adminState.users.map(u => `
-        <div style="border: 1px solid #333; padding: 15px; border-radius: 8px; margin-bottom: 10px;">
-          <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
-            <div><strong>${u.username}</strong> ${u.disabled ? '<span style="color:#FF003C;">(Disabled)</span>' : ''}</div>
-            <div style="color: #6C7A8F; font-size: 12px;">Mob: ${u.mobile || 'N/A'}</div>
+      const wrap = document.getElementById('adminUsersList');
+      if (!adminState.users.length) { wrap.innerHTML = '<p style="color:#6C7A8F; text-align:center;">No users found.</p>'; return; }
+
+      wrap.innerHTML = adminState.users.map(u => {
+        const userBanks = adminState.banks.filter(b => b.userId === u.id);
+        return `
+          <div class="list-item" style="margin-bottom: 15px;">
+            <div class="row" style="border-bottom: 1px solid var(--border); padding-bottom: 10px; margin-bottom: 10px;">
+              <div>
+                <div style="font-size: 18px; font-weight: bold; color: var(--neon);">${u.username}</div>
+                <div style="font-size: 12px; color: var(--text-dim);">Mobile: ${u.mobile || 'N/A'} | ID: ${u.id}</div>
+              </div>
+              <div class="row">
+                <button class="btn-sm btn-reject" onclick="toggleUser('${u.id}')">${u.disabled ? 'ENABLE' : 'DISABLE'}</button>
+                <button class="btn-sm btn-del" onclick="resetPass('${u.id}')">RESET PASS</button>
+              </div>
+            </div>
+            <div>
+              <div style="font-size: 12px; color: var(--text-dim); margin-bottom: 5px; font-weight: bold;">LINKED BANKS:</div>
+              ${userBanks.length ? userBanks.map(b => `
+                <div style="background: rgba(255,255,255,0.05); padding: 8px; border-radius: 4px; margin-bottom: 5px; font-size: 13px;">
+                  <strong>${b.holder || 'No Name'}</strong> - ${b.bank} | A/C: ${b.number} | IFSC: ${b.ifsc}
+                </div>
+              `).join('') : '<div style="font-size: 12px; color: var(--text-dim);">No bank accounts added.</div>'}
+            </div>
           </div>
-          <div style="display: flex; gap: 10px;">
-            <button onclick="toggleUser('${u.id}')" style="background:#333; color:#fff; padding:5px;">${u.disabled ? 'ENABLE' : 'DISABLE'}</button>
-            <button onclick="resetPass('${u.id}')" style="background:#333; color:#fff; padding:5px;">RESET PASS</button>
-            <button onclick="delUser('${u.id}')" style="background:#FF003C; color:#fff; padding:5px;">DELETE</button>
-          </div>
-        </div>
-      `).join('');
+        `;
+      }).join('');
     }
 
-    window.toggleUser = async (id) => { await A.req('admin/user/toggle', { id }); loadAll(); }
-    window.delUser = async (id) => { if(confirm('Delete user?')) { await A.req('admin/user/del', { id }); loadAll(); } }
-    window.resetPass = async (id) => {
-      const p = prompt('New password (min 6 chars):');
-      if(p) { await A.req('admin/user/pass', { id, p }); alert('Password reset'); }
+    async function createUser() {
+      const u = document.getElementById('newUserId').value;
+      const p = document.getElementById('newUserPass').value;
+      const m = document.getElementById('newUserMob').value;
+      try {
+        await apiReq('admin/user/add', { u, p, m });
+        showToast('✅ User created');
+        document.getElementById('newUserId').value = '';
+        document.getElementById('newUserPass').value = '';
+        document.getElementById('newUserMob').value = '';
+        document.getElementById('addUserForm').classList.add('hidden');
+        loadAdminData();
+      } catch (e) { showToast('❌ ' + e.message); }
     }
 
+    async function toggleUser(id) {
+      try { await apiReq('admin/user/toggle', { id }); loadAdminData(); } catch (e) { showToast('❌ ' + e.message); }
+    }
+
+    async function resetPass(id) {
+      const p = prompt('Enter new password (min 6 chars):');
+      if (!p) return;
+      try { await apiReq('admin/user/pass', { id, p }); showToast('✅ Password reset'); } catch (e) { showToast('❌ ' + e.message); }
+    }
+
+    // RENDER LOGS
+    function renderLogs() {
+      const wrap = document.getElementById('adminLogsList');
+      if (!adminState.logs || !adminState.logs.length) { wrap.innerHTML = '<p style="color:#6C7A8F; text-align:center;">No activity yet.</p>'; return; }
+      wrap.innerHTML = adminState.logs.map(l => {
+        const user = adminState.users.find(u => u.id === l.userId);
+        return `
+          <div class="list-item" style="padding: 10px;">
+            <div style="font-size: 13px; color: #fff;"><strong>${user ? user.username : 'Unknown'}</strong> <span style="color: var(--neon);">— ${l.action}</span></div>
+            <div style="font-size: 11px; color: var(--text-dim); margin-top: 4px;">${l.details} • ${new Date(l.ts).toLocaleString()}</div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // SETTINGS
     function fillSettings() {
       const s = adminState.settings;
-      const f = document.getElementById('settingsForm');
-      f.baseRate.value = s.baseRate || 125; f.rateStep.value = s.rateStep || 1;
-      f.mixBase.value = s.mixBase || 135; f.mixStep.value = s.mixStep || 2;
-      f.xxxBase.value = s.xxxBase || 150; f.xxxStep.value = s.xxxStep || 3;
-      f.offerRate.value = s.offerRate || 126; f.minSell.value = s.minSell || 50;
-      f.isOfferActive.checked = s.isOfferActive || false;
-      f.trc20.value = s.trc20 || ''; f.bep20.value = s.bep20 || ''; f.erc20.value = s.erc20 || '';
+      document.getElementById('setBaseRate').value = s.baseRate || 125;
+      document.getElementById('setRateStep').value = s.rateStep || 1;
+      document.getElementById('setOfferRate').value = s.offerRate || 126;
+      document.getElementById('setMinSell').value = s.minSell || 100;
+      document.getElementById('setIsOfferActive').value = s.isOfferActive ? 'true' : 'false';
+      document.getElementById('setTrc20').value = s.trc20 || '';
+      document.getElementById('setBep20').value = s.bep20 || '';
+      document.getElementById('setErc20').value = s.erc20 || '';
     }
 
-    document.getElementById('settingsForm').addEventListener('submit', async (e) => {
-      e.preventDefault(); const f = e.target;
-      await A.req('admin/settings', {
-        baseRate: Number(f.baseRate.value), rateStep: Number(f.rateStep.value),
-        mixBase: Number(f.mixBase.value), mixStep: Number(f.mixStep.value),
-        xxxBase: Number(f.xxxBase.value), xxxStep: Number(f.xxxStep.value),
-        offerRate: Number(f.offerRate.value), minSell: Number(f.minSell.value),
-        isOfferActive: f.isOfferActive.checked,
-        trc20: f.trc20.value, bep20: f.bep20.value, erc20: f.erc20.value
-      });
-      alert('Settings Saved!'); loadAll();
-    });
-
-    document.getElementById('adminLoginForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
+    async function saveSettings() {
+      const body = {
+        baseRate: Number(document.getElementById('setBaseRate').value),
+        rateStep: Number(document.getElementById('setRateStep').value),
+        offerRate: Number(document.getElementById('setOfferRate').value),
+        minSell: Number(document.getElementById('setMinSell').value),
+        isOfferActive: document.getElementById('setIsOfferActive').value === 'true',
+        trc20: document.getElementById('setTrc20').value,
+        bep20: document.getElementById('setBep20').value,
+        erc20: document.getElementById('setErc20').value
+      };
       try {
-        const { t } = await A.req('admin/login', { p: e.target.p.value });
-        A.token = t; localStorage.setItem('bp_admin', t); loadAll();
-      } catch (err) { alert(err.message); }
-    });
+        await apiReq('admin/settings', body);
+        showToast('✅ Settings Saved');
+        loadAdminData();
+      } catch (e) { showToast('❌ ' + e.message); }
+    }
 
-    document.getElementById('newUserForm').addEventListener('submit', async (e) => {
-      e.preventDefault(); const f = e.target;
-      try { await A.req('admin/user/add', { u: f.u.value, p: f.p.value, m: f.m.value }); loadAll(); f.reset(); } catch (err) { alert(err.message); }
-    });
-
-    if(A.token) loadAll();
+    // INITIAL BOOT
+    window.onload = () => {
+      if (adminToken) {
+        document.getElementById('adminLogin').classList.add('hidden');
+        document.getElementById('adminApp').classList.remove('hidden');
+        loadAdminData();
+      }
+    };
   </script>
 </body>
 </html>
