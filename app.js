@@ -216,10 +216,13 @@ function renderOrderCards() {
   }).join('');
 }
 
+// UPDATED: Dynamic MinSell check
 window.updateManualRate = function() {
   const amt = Number($('#manualAmt').value);
+  const minSell = state.settings.minSell || 100; // Admin Panel Setting
+  
   const inrEl = $('#manualInr');
-  if (!amt || amt < 50) {
+  if (!amt || amt < minSell) {
     if(inrEl) inrEl.innerText = '₹0';
     return;
   }
@@ -239,9 +242,12 @@ window.bookOrder = function(amount, fundType) {
   }
 }
 
+// UPDATED: Dynamic MinSell check
 window.bookManual = function() {
   const amt = Number($('#manualAmt').value);
-  if (!amt || amt < 50) return toast('Minimum $50 required');
+  const minSell = state.settings.minSell || 100; // Admin Panel Setting
+  
+  if (!amt || amt < minSell) return toast(`Minimum $${minSell} required`);
   bookOrder(amt, state.currentFund);
 }
 
@@ -281,8 +287,11 @@ if(finalOrderForm) {
     const bankId = $('#bankSelect').value;
     const txid = $('#txid').value.trim();
     const file = $('#receipt').files[0];
+    
+    const minSell = state.settings.minSell || 100; // Admin Panel Setting
   
     if (!slot) return toast('Please select an order first');
+    if (slot < minSell) return toast(`Minimum sell is $${minSell}`);
     if (!bankId) return toast('Please add a bank account');
     if (!txid || !file) return toast('Please fill all details');
   
@@ -342,4 +351,4 @@ if(logoutBtn) {
     localStorage.removeItem('bp_token');
     location.reload();
   });
-}
+  }
