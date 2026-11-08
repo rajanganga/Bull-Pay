@@ -195,7 +195,8 @@ const server = http.createServer((req, res) => {
       const user = D.users.find(x => x.id === me);
       const bank = D.banks.find(x => x.id === b.bankId && x.userId === me), tx = clean(b.txid, 100);
       if (!bank) return send(res, 400, { e: 'Select valid bank' });
-      if (b.slot < (D.settings.minSell || 50)) return send(res, 400, { e: `Minimum sell is $${D.settings.minSell}` });
+      const minLimit = D.settings.minSell || 100;
+if (b.slot < minLimit) return send(res, 400, { e: `Minimum sell is $${minLimit}` });
       if (tx.length < 8) return send(res, 400, { e: 'Enter valid Transaction ID' });
       if (D.orders.some(x => x.txid.toLowerCase() === tx.toLowerCase())) return send(res, 400, { e: 'This TXID is already used' });
       
